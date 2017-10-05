@@ -106,22 +106,3 @@ func (a *AuthSpice) checkPass(pass string) bool {
 }
 
 func (a *AuthSpice) Init() error { return nil }
-
-type AuthSASL struct{}
-
-func (a *AuthSASL) Next(ctx AuthContext) (bool, error) {
-	return a.checkUserPass("", ""), nil
-}
-
-func (a *AuthSASL) Method() AuthMethod {
-	return AuthMethodSpice
-}
-
-func (a *AuthSASL) checkUserPass(user, pass string) bool {
-	if user == "john" && pass == "doe" {
-		return true
-	}
-	return false
-}
-
-func (a *AuthSASL) Init() error { return nil }
