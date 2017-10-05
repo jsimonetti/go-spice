@@ -26,7 +26,8 @@ type tenantHandshake struct {
 	channelType red.ChannelType
 	sessionID   [4]uint8
 
-	otp string // one time password
+	otp         string // one time password
+	destination string // compute address
 }
 
 func (c *tenantHandshake) Done() bool {
@@ -57,26 +58,24 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 		tenant:      tenant,
 	}
 
-	destination := "127.0.0.1:5900"
-
 	// Lookup destination in proxy.sessionTable
 	if c.proxy.sessionTable.Lookup(c.sessionID) {
 		var err error
-		destination, err = c.proxy.sessionTable.Connect(c.sessionID)
+		c.destination, err = c.proxy.sessionTable.Connect(c.sessionID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	for !handShake.Done() {
-		if err := handShake.clientLinkStage(destination); err != nil {
+		if err := handShake.clientLinkStage(c.destination); err != nil {
 			c.proxy.log.WithError(err).Error("compute handshake error")
 			return nil, err
 		}
 	}
 
 	c.sessionID = handShake.sessionID
-	c.proxy.sessionTable.Add(c.sessionID, destination, c.otp)
+	c.proxy.sessionTable.Add(c.sessionID, c.destination, c.otp)
 	c.done = true
 
 	return handShake.compute, nil
@@ -103,15 +102,16 @@ func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
 		return fmt.Errorf("unavailable auth method %s", c.tenantAuthMethod)
 	}
 
-	authCtx := &AuthContext{tenant: conn, privateKey: c.privateKey, otp: c.otp}
+	authCtx := &AuthContext{tenant: conn, privateKey: c.privateKey, otp: c.otp, address: c.destination}
 
-	result, err := auth.Next(authCtx)
+	result, destination, err := auth.Next(authCtx)
 	if err != nil {
 		c.proxy.log.WithError(err).Error("authentication error")
 		return err
 	}
 
 	c.otp = authCtx.otp
+	c.destination = destination
 
 	if !result {
 		if err := sendServerTicket(red.ErrorPermissionDenied, conn); err != nil {

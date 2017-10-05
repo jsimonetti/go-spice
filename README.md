@@ -7,6 +7,11 @@ It can be used to proxy virt-viewer/remote-viewer traffic to destination qemu in
 This package is still unfinished. The API is highly unstable.
 
 TODO:
-- implement proper capability handling
-- implement compute discovery
+- implement proper auth capability handling
+- update documentation
+
+Not planned, but nice to have
 - implement SASL authentication
+
+
+See [example](examples/proxy.go) for an example including an Authenticator

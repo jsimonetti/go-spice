@@ -1,16 +1,12 @@
 package spice
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
-	"fmt"
-	"io"
 	"net"
 )
 
 type Authenticator interface {
-	Next(*AuthContext) (bool, error)
+	Next(*AuthContext) (accessGranted bool, computeDestination string, err error)
 	Method() AuthMethod
 	Init() error
 }
@@ -23,10 +19,13 @@ const (
 	AuthMethodSASL
 )
 
+var _ Authenticator = &NOOPAuth{}
+
 type NOOPAuth struct{}
 
-func (a *NOOPAuth) Next(ctx *AuthContext) (bool, error) {
-	return true, nil
+func (a *NOOPAuth) Next(ctx *AuthContext) (bool, string, error) {
+	ctx.ReadTicket()
+	return true, "127.0.0.1:5900", nil
 }
 
 func (a *NOOPAuth) Method() AuthMethod {
@@ -39,9 +38,10 @@ type AuthContext struct {
 	tenant     net.Conn
 	privateKey *rsa.PrivateKey // needed for Spice auth
 	otp        string          // previously authenticated ticket
+	address    string          // destination compute node
 }
 
-func (a *AuthContext) Ticket() []byte {
+func (a *AuthContext) ReadTicket() []byte {
 	ticket := make([]byte, 128)
 	if _, err := a.tenant.Read(ticket); err != nil {
 		return nil
@@ -57,63 +57,18 @@ func (a *AuthContext) PrivateKey() *rsa.PrivateKey {
 	return key
 }
 
-func (a *AuthContext) Tenant() io.ReadWriter {
-	return a.tenant.(io.ReadWriter)
+func (a *AuthContext) OTP() string {
+	return a.otp
 }
 
-func (a *AuthContext) RemoteAddr() net.Addr {
-	return a.tenant.RemoteAddr()
+func (a *AuthContext) SetOTP(otp string) {
+	a.otp = otp
 }
 
-func (a *AuthContext) LocalAddr() net.Addr {
-	return a.tenant.LocalAddr()
+func (a *AuthContext) Address() string {
+	return a.address
 }
 
-type AuthSpice struct{}
-
-func (a *AuthSpice) Next(ctx *AuthContext) (bool, error) {
-
-	ticket := ctx.Ticket()
-	if ticket == nil {
-		return false, fmt.Errorf("unknown ticket")
-	}
-
-	key := ctx.PrivateKey()
-	if key == nil {
-		return false, fmt.Errorf("unknown key")
-	}
-
-	rng := rand.Reader
-
-	plaintext, err := rsa.DecryptOAEP(sha1.New(), rng, key, ticket, []byte{})
-	if err != nil {
-		return false, fmt.Errorf("error in decryption: %s\n", err)
-	}
-
-	// do we need to remove this last char??
-	pass := string(plaintext[:len(plaintext)-1])
-	if ctx.otp != "" && ctx.otp == pass {
-		return true, nil
-	}
-
-	if a.checkPass(pass) {
-		ctx.otp = pass
-		return true, nil
-	}
-
-	return false, nil
+func (a *AuthContext) SetAddress(address string) {
+	a.address = address
 }
-
-func (a *AuthSpice) Method() AuthMethod {
-	return AuthMethodSpice
-}
-
-func (a *AuthSpice) checkPass(pass string) bool {
-	if pass == "test" {
-		println("external auth successful")
-		return true
-	}
-	return false
-}
-
-func (a *AuthSpice) Init() error { return nil }
