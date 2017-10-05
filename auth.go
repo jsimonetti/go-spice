@@ -1,8 +1,6 @@
 package spice
 
 import (
-	"context"
-
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
@@ -38,84 +36,37 @@ func (a *NOOPAuth) Method() AuthMethod {
 func (a *NOOPAuth) Init() error { return nil }
 
 type AuthContext struct {
-	ctx context.Context
+	tenant     net.Conn
+	privateKey *rsa.PrivateKey // needed for Spice auth
 }
 
 func (a *AuthContext) Ticket() []byte {
-	ticket := a.ctx.Value(contextKeyAuthToken)
-	if ticket == nil {
+	ticket := make([]byte, 128)
+	if _, err := a.tenant.Read(ticket); err != nil {
 		return nil
 	}
-
-	if _, ok := ticket.([]byte); !ok {
-		return nil
-	}
-	return ticket.([]byte)
+	return ticket
 }
 
 func (a *AuthContext) PrivateKey() *rsa.PrivateKey {
-	key := a.ctx.Value(contextKeyAuthKey)
+	key := a.privateKey
 	if key == nil {
 		return nil
 	}
-
-	if _, ok := key.(*rsa.PrivateKey); !ok {
-		return nil
-	}
-
-	return key.(*rsa.PrivateKey)
+	return key
 }
 
-func (a *AuthContext) Client() io.ReadWriter {
-	client := a.ctx.Value(contextKeyAuthClient)
-	if client == nil {
-		return nil
-	}
-
-	if _, ok := client.(io.ReadWriter); !ok {
-		return nil
-	}
-
-	return client.(io.ReadWriter)
+func (a *AuthContext) Tenant() io.ReadWriter {
+	return a.tenant.(io.ReadWriter)
 }
 
 func (a *AuthContext) RemoteAddr() net.Addr {
-	client := a.ctx.Value(contextKeyAuthClient)
-	if client == nil {
-		return nil
-	}
-
-	if _, ok := client.(net.Conn); !ok {
-		return nil
-	}
-
-	return client.(net.Conn).RemoteAddr()
+	return a.tenant.RemoteAddr()
 }
 
 func (a *AuthContext) LocalAddr() net.Addr {
-	client := a.ctx.Value(contextKeyAuthClient)
-	if client == nil {
-		return nil
-	}
-
-	if _, ok := client.(net.Conn); !ok {
-		return nil
-	}
-
-	return client.(net.Conn).LocalAddr()
+	return a.tenant.LocalAddr()
 }
-
-type contextKey string
-
-func (c contextKey) String() string {
-	return "spiceAuth context key " + string(c)
-}
-
-const (
-	contextKeyAuthToken  = contextKey("auth-token")
-	contextKeyAuthKey    = contextKey("auth-key")
-	contextKeyAuthClient = contextKey("auth-client")
-)
 
 type AuthSpice struct{}
 
@@ -131,8 +82,6 @@ func (a *AuthSpice) Next(ctx AuthContext) (bool, error) {
 		return false, fmt.Errorf("unknown key")
 	}
 
-	// crypto/rand.Reader is a good source of entropy for blinding the RSA
-	// operation.
 	rng := rand.Reader
 
 	plaintext, err := rsa.DecryptOAEP(sha1.New(), rng, key, ticket, []byte{})
@@ -157,3 +106,22 @@ func (a *AuthSpice) checkPass(pass string) bool {
 }
 
 func (a *AuthSpice) Init() error { return nil }
+
+type AuthSASL struct{}
+
+func (a *AuthSASL) Next(ctx AuthContext) (bool, error) {
+	return a.checkUserPass("", ""), nil
+}
+
+func (a *AuthSASL) Method() AuthMethod {
+	return AuthMethodSpice
+}
+
+func (a *AuthSASL) checkUserPass(user, pass string) bool {
+	if user == "john" && pass == "doe" {
+		return true
+	}
+	return false
+}
+
+func (a *AuthSASL) Init() error { return nil }

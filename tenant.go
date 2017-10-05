@@ -11,8 +11,6 @@ import (
 
 	"fmt"
 
-	"context"
-
 	"github.com/jsimonetti/go-spice/red"
 )
 
@@ -36,20 +34,20 @@ func (c *tenantHandshake) Done() bool {
 func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 	bufConn := bufio.NewReader(tenant)
 
-	// Handle first Client Link Message
+	// Handle first Tenant Link Message
 	if err := c.clientLinkMessage(bufConn, tenant); err != nil {
 		return nil, err
 	}
 
-	// Handle 2nd Client auth method select
+	// Handle 2nd Tenant auth method select
 	if err := c.clientAuthMethod(bufConn, tenant); err != nil {
 		return nil, err
 	}
 
-	// Handle 3rd Client Ticket
-	if err := c.clientTicket(bufConn, tenant); err != nil {
-		return nil, err
-	}
+	// Handle 3rd Tenant Ticket
+	//if err := c.clientTicket(bufConn, tenant); err != nil {
+	//	return nil, err
+	//}
 
 	// Do compute handshake
 
@@ -86,71 +84,7 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 	return handShake.compute, nil
 }
 
-func (c *tenantHandshake) clientTicket(in io.Reader, conn net.Conn) error {
-	authCtx := context.Background()
-	authCtx = context.WithValue(authCtx, contextKeyAuthKey, c.privateKey)
-	authCtx = context.WithValue(authCtx, contextKeyAuthClient, conn)
-	out := conn.(io.Writer)
-
-	var err error
-	b := make([]byte, 128)
-
-	if _, err = in.Read(b); err != nil {
-		c.proxy.log.WithError(err).Error("error reading client Ticket")
-		return err
-	}
-
-	authCtx = context.WithValue(authCtx, contextKeyAuthToken, b)
-
-	var auth Authenticator
-	var ok bool
-
-	if auth, ok = c.proxy.authenticator[c.tenantAuthMethod]; !ok {
-		if err := c.sendServerTicket(red.ErrorPermissionDenied, out); err != nil {
-			c.proxy.log.WithError(err).Warn("send ticket")
-		}
-		return fmt.Errorf("unavailable auth method %s", c.tenantAuthMethod)
-	}
-
-	result, err := auth.Next(AuthContext{ctx: authCtx})
-	if err != nil {
-		c.proxy.log.WithError(err).Error("authentication error")
-		return err
-	}
-
-	if !result {
-		if err := c.sendServerTicket(red.ErrorPermissionDenied, out); err != nil {
-			c.proxy.log.WithError(err).Warn("send ticket")
-			return err
-		}
-		return fmt.Errorf("authentication failed")
-	}
-
-	if err := c.sendServerTicket(red.ErrorOk, out); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *tenantHandshake) sendServerTicket(result red.ErrorCode, writer io.Writer) error {
-	msg := red.ServerTicket{
-		Result: result,
-	}
-
-	b, err := msg.MarshalBinary()
-	if err != nil {
-		return err
-	}
-
-	if _, err := writer.Write(b); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *tenantHandshake) clientAuthMethod(in io.Reader, out io.Writer) error {
+func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
 	var err error
 	b := make([]byte, 4)
 
@@ -161,7 +95,36 @@ func (c *tenantHandshake) clientAuthMethod(in io.Reader, out io.Writer) error {
 
 	c.tenantAuthMethod = AuthMethod(b[0])
 
-	// do nothing further
+	var auth Authenticator
+	var ok bool
+
+	if auth, ok = c.proxy.authenticator[c.tenantAuthMethod]; !ok {
+		if err := sendServerTicket(red.ErrorPermissionDenied, conn); err != nil {
+			c.proxy.log.WithError(err).Warn("send ticket")
+		}
+		return fmt.Errorf("unavailable auth method %s", c.tenantAuthMethod)
+	}
+
+	authCtx := AuthContext{tenant: conn, privateKey: c.privateKey}
+
+	result, err := auth.Next(authCtx)
+	if err != nil {
+		c.proxy.log.WithError(err).Error("authentication error")
+		return err
+	}
+
+	if !result {
+		if err := sendServerTicket(red.ErrorPermissionDenied, conn); err != nil {
+			c.proxy.log.WithError(err).Warn("send ticket")
+			return err
+		}
+		return fmt.Errorf("authentication failed")
+	}
+
+	if err := sendServerTicket(red.ErrorOk, conn); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -272,4 +235,21 @@ func readLinkPacket(conn io.Reader) ([]byte, error) {
 	}
 
 	return messageBytes[:int(header.Size)], nil
+}
+
+func sendServerTicket(result red.ErrorCode, writer io.Writer) error {
+	msg := red.ServerTicket{
+		Result: result,
+	}
+
+	b, err := msg.MarshalBinary()
+	if err != nil {
+		return err
+	}
+
+	if _, err := writer.Write(b); err != nil {
+		return err
+	}
+
+	return nil
 }
