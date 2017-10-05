@@ -47,7 +47,9 @@ func New(options ...Option) (*Proxy, error) {
 		proxy.dial = defaultDialer()
 	}
 
-	proxy.sessionTable = make(sessionTable)
+	table := sessionTable{}
+	table.entries = make(map[SessionID]*sessionEntry)
+	proxy.sessionTable = table
 
 	return proxy, nil
 }
@@ -97,5 +99,6 @@ func (p *Proxy) ServeConn(tenant net.Conn) error {
 		p.log.WithError(err).WithFields(logrus.Fields{"sessionid": handShake.sessionID, "tenant": tenant.RemoteAddr(), "compute": compute.LocalAddr()}).Error("close error")
 	}
 	p.log.WithFields(logrus.Fields{"sessionid": handShake.sessionID, "tenant": tenant.RemoteAddr(), "compute": compute.LocalAddr()}).Info("connection closed")
+	p.sessionTable.Disconnect(handShake.sessionID)
 	return nil
 }

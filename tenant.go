@@ -44,13 +44,7 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 		return nil, err
 	}
 
-	// Handle 3rd Tenant Ticket
-	//if err := c.clientTicket(bufConn, tenant); err != nil {
-	//	return nil, err
-	//}
-
 	// Do compute handshake
-
 	handShake := &computeHandshake{
 		proxy:       c.proxy,
 		channelType: c.channelType,
@@ -61,15 +55,14 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 
 	destination := "127.0.0.1:5900"
 
-	/*
-		// Lookup destination in proxy.sessionTable
-
-		if _, ok := c.proxy.sessionTable[handShake.sessionID]; ok {
-			entry := c.proxy.sessionTable[handShake.sessionID]
-			destination = entry.address
-			entry.count = entry.count + 1
+	// Lookup destination in proxy.sessionTable
+	if c.proxy.sessionTable.Lookup(c.sessionID) {
+		var err error
+		destination, err = c.proxy.sessionTable.Connect(c.sessionID)
+		if err != nil {
+			return nil, err
 		}
-	*/
+	}
 
 	for !handShake.Done() {
 		if err := handShake.clientLinkStage(destination); err != nil {
@@ -79,6 +72,7 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 	}
 
 	c.sessionID = handShake.sessionID
+	c.proxy.sessionTable.Add(c.sessionID, destination)
 	c.done = true
 
 	return handShake.compute, nil
