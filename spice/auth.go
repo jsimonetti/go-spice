@@ -7,6 +7,8 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"fmt"
+	"io"
+	"net"
 )
 
 type Authenticator interface {
@@ -40,7 +42,7 @@ type AuthContext struct {
 }
 
 func (a *AuthContext) Ticket() []byte {
-	ticket := a.ctx.Value(ContextKeyAuthToken)
+	ticket := a.ctx.Value(contextKeyAuthToken)
 	if ticket == nil {
 		return nil
 	}
@@ -52,7 +54,7 @@ func (a *AuthContext) Ticket() []byte {
 }
 
 func (a *AuthContext) PrivateKey() *rsa.PrivateKey {
-	key := a.ctx.Value(ContextKeyAuthKey)
+	key := a.ctx.Value(contextKeyAuthKey)
 	if key == nil {
 		return nil
 	}
@@ -64,6 +66,45 @@ func (a *AuthContext) PrivateKey() *rsa.PrivateKey {
 	return key.(*rsa.PrivateKey)
 }
 
+func (a *AuthContext) Client() io.ReadWriter {
+	client := a.ctx.Value(contextKeyAuthClient)
+	if client == nil {
+		return nil
+	}
+
+	if _, ok := client.(io.ReadWriter); !ok {
+		return nil
+	}
+
+	return client.(io.ReadWriter)
+}
+
+func (a *AuthContext) RemoteAddr() net.Addr {
+	client := a.ctx.Value(contextKeyAuthClient)
+	if client == nil {
+		return nil
+	}
+
+	if _, ok := client.(net.Conn); !ok {
+		return nil
+	}
+
+	return client.(net.Conn).RemoteAddr()
+}
+
+func (a *AuthContext) LocalAddr() net.Addr {
+	client := a.ctx.Value(contextKeyAuthClient)
+	if client == nil {
+		return nil
+	}
+
+	if _, ok := client.(net.Conn); !ok {
+		return nil
+	}
+
+	return client.(net.Conn).LocalAddr()
+}
+
 type contextKey string
 
 func (c contextKey) String() string {
@@ -71,8 +112,9 @@ func (c contextKey) String() string {
 }
 
 const (
-	ContextKeyAuthToken = contextKey("auth-token")
-	ContextKeyAuthKey   = contextKey("auth-key")
+	contextKeyAuthToken  = contextKey("auth-token")
+	contextKeyAuthKey    = contextKey("auth-key")
+	contextKeyAuthClient = contextKey("auth-client")
 )
 
 type AuthSpice struct{}

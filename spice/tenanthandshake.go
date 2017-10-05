@@ -33,7 +33,7 @@ func (c *tenantHandshake) Done() bool {
 	return c.done
 }
 
-func (c *tenantHandshake) clientLinkStage(tenant io.ReadWriter) (net.Conn, error) {
+func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 	bufConn := bufio.NewReader(tenant)
 
 	// Handle first Client Link Message
@@ -86,7 +86,12 @@ func (c *tenantHandshake) clientLinkStage(tenant io.ReadWriter) (net.Conn, error
 	return handShake.compute, nil
 }
 
-func (c *tenantHandshake) clientTicket(in io.Reader, out io.Writer) error {
+func (c *tenantHandshake) clientTicket(in io.Reader, conn net.Conn) error {
+	authCtx := context.Background()
+	authCtx = context.WithValue(authCtx, contextKeyAuthKey, c.privateKey)
+	authCtx = context.WithValue(authCtx, contextKeyAuthClient, conn)
+	out := conn.(io.Writer)
+
 	var err error
 	b := make([]byte, 128)
 
@@ -94,6 +99,8 @@ func (c *tenantHandshake) clientTicket(in io.Reader, out io.Writer) error {
 		c.proxy.log.WithError(err).Error("error reading client Ticket")
 		return err
 	}
+
+	authCtx = context.WithValue(authCtx, contextKeyAuthToken, b)
 
 	var auth Authenticator
 	var ok bool
@@ -105,11 +112,7 @@ func (c *tenantHandshake) clientTicket(in io.Reader, out io.Writer) error {
 		return fmt.Errorf("unavailable auth method %s", c.tenantAuthMethod)
 	}
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, ContextKeyAuthToken, b)
-	ctx = context.WithValue(ctx, ContextKeyAuthKey, c.privateKey)
-
-	result, err := auth.Next(AuthContext{ctx: ctx})
+	result, err := auth.Next(AuthContext{ctx: authCtx})
 	if err != nil {
 		c.proxy.log.WithError(err).Error("authentication error")
 		return err
