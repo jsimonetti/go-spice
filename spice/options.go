@@ -24,7 +24,9 @@ func WithLogger(log *logrus.Logger) Option {
 
 func WithAuthenticator(a Authenticator) Option {
 	return func(p *Proxy) error {
-		a.Init()
+		if err := a.Init(); err != nil {
+			return err
+		}
 		p.authenticator[a.Method()] = a
 		return nil
 	}

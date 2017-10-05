@@ -12,7 +12,7 @@ import (
 type Authenticator interface {
 	Next(AuthContext) (bool, error)
 	Method() AuthMethod
-	Init()
+	Init() error
 }
 
 type AuthMethod uint8
@@ -33,10 +33,35 @@ func (a *NOOPAuth) Method() AuthMethod {
 	return AuthMethodSpice
 }
 
-func (a *NOOPAuth) Init() {}
+func (a *NOOPAuth) Init() error { return nil }
 
 type AuthContext struct {
 	ctx context.Context
+}
+
+func (a *AuthContext) Ticket() []byte {
+	ticket := a.ctx.Value(ContextKeyAuthToken)
+	if ticket == nil {
+		return nil
+	}
+
+	if _, ok := ticket.([]byte); !ok {
+		return nil
+	}
+	return ticket.([]byte)
+}
+
+func (a *AuthContext) PrivateKey() *rsa.PrivateKey {
+	key := a.ctx.Value(ContextKeyAuthKey)
+	if key == nil {
+		return nil
+	}
+
+	if _, ok := key.(*rsa.PrivateKey); !ok {
+		return nil
+	}
+
+	return key.(*rsa.PrivateKey)
 }
 
 type contextKey string
@@ -54,23 +79,23 @@ type AuthSpice struct{}
 
 func (a *AuthSpice) Next(ctx AuthContext) (bool, error) {
 
-	ticket := ctx.ctx.Value(ContextKeyAuthToken)
-	key := ctx.ctx.Value(ContextKeyAuthKey)
-
-	if _, ok := ticket.([]byte); !ok {
-		return false, fmt.Errorf("invalid ticket format")
+	ticket := ctx.Ticket()
+	if ticket == nil {
+		return false, fmt.Errorf("unknown ticket")
 	}
-	if _, ok := key.(*rsa.PrivateKey); !ok {
-		return false, fmt.Errorf("invalid private key format")
+
+	key := ctx.PrivateKey()
+	if key == nil {
+		return false, fmt.Errorf("unknown key")
 	}
 
 	// crypto/rand.Reader is a good source of entropy for blinding the RSA
 	// operation.
 	rng := rand.Reader
 
-	plaintext, err := rsa.DecryptOAEP(sha1.New(), rng, key.(*rsa.PrivateKey), ticket.([]byte), []byte{})
+	plaintext, err := rsa.DecryptOAEP(sha1.New(), rng, key, ticket, []byte{})
 	if err != nil {
-		return false, fmt.Errorf("Error from decryption: %s\n", err)
+		return false, fmt.Errorf("error in decryption: %s\n", err)
 	}
 
 	// do we need to remove this last char??
@@ -89,4 +114,4 @@ func (a *AuthSpice) checkPass(pass string) bool {
 	return false
 }
 
-func (a *AuthSpice) Init() {}
+func (a *AuthSpice) Init() error { return nil }
