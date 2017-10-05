@@ -17,6 +17,7 @@ type sessionTable struct {
 type sessionEntry struct {
 	address string
 	count   int
+	otp     string
 }
 
 func (s *sessionTable) Lookup(session SessionID) bool {
@@ -26,11 +27,20 @@ func (s *sessionTable) Lookup(session SessionID) bool {
 	return ok
 }
 
-func (s *sessionTable) Add(session SessionID, destination string) {
+func (s *sessionTable) OTP(session SessionID) string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if _, ok := s.entries[session]; ok {
+		return s.entries[session].otp
+	}
+	return ""
+}
+
+func (s *sessionTable) Add(session SessionID, destination string, otp string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.entries[session]; !ok {
-		s.entries[session] = &sessionEntry{address: destination, count: 1}
+		s.entries[session] = &sessionEntry{address: destination, count: 1, otp: otp}
 	}
 	return
 }

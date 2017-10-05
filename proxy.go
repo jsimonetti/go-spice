@@ -94,11 +94,14 @@ func (p *Proxy) ServeConn(tenant net.Conn) error {
 	}
 
 	p.log.WithFields(logrus.Fields{"sessionid": handShake.sessionID, "tenant": tenant.RemoteAddr(), "compute": compute.LocalAddr()}).Info("connection established")
+
 	flow := NewFlow(tenant, compute)
 	if err := flow.Proxy(); err != nil {
 		p.log.WithError(err).WithFields(logrus.Fields{"sessionid": handShake.sessionID, "tenant": tenant.RemoteAddr(), "compute": compute.LocalAddr()}).Error("close error")
 	}
+
 	p.log.WithFields(logrus.Fields{"sessionid": handShake.sessionID, "tenant": tenant.RemoteAddr(), "compute": compute.LocalAddr()}).Info("connection closed")
 	p.sessionTable.Disconnect(handShake.sessionID)
+
 	return nil
 }

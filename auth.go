@@ -10,7 +10,7 @@ import (
 )
 
 type Authenticator interface {
-	Next(AuthContext) (bool, error)
+	Next(*AuthContext) (bool, error)
 	Method() AuthMethod
 	Init() error
 }
@@ -25,7 +25,7 @@ const (
 
 type NOOPAuth struct{}
 
-func (a *NOOPAuth) Next(ctx AuthContext) (bool, error) {
+func (a *NOOPAuth) Next(ctx *AuthContext) (bool, error) {
 	return true, nil
 }
 
@@ -38,6 +38,7 @@ func (a *NOOPAuth) Init() error { return nil }
 type AuthContext struct {
 	tenant     net.Conn
 	privateKey *rsa.PrivateKey // needed for Spice auth
+	otp        string          // previously authenticated ticket
 }
 
 func (a *AuthContext) Ticket() []byte {
@@ -70,7 +71,7 @@ func (a *AuthContext) LocalAddr() net.Addr {
 
 type AuthSpice struct{}
 
-func (a *AuthSpice) Next(ctx AuthContext) (bool, error) {
+func (a *AuthSpice) Next(ctx *AuthContext) (bool, error) {
 
 	ticket := ctx.Ticket()
 	if ticket == nil {
@@ -91,7 +92,16 @@ func (a *AuthSpice) Next(ctx AuthContext) (bool, error) {
 
 	// do we need to remove this last char??
 	pass := string(plaintext[:len(plaintext)-1])
-	return a.checkPass(pass), nil
+	if ctx.otp != "" && ctx.otp == pass {
+		return true, nil
+	}
+
+	if a.checkPass(pass) {
+		ctx.otp = pass
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (a *AuthSpice) Method() AuthMethod {
@@ -100,6 +110,7 @@ func (a *AuthSpice) Method() AuthMethod {
 
 func (a *AuthSpice) checkPass(pass string) bool {
 	if pass == "test" {
+		println("external auth successful")
 		return true
 	}
 	return false
