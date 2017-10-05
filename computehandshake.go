@@ -16,7 +16,7 @@ import (
 
 	"context"
 
-	"github.com/jsimonetti/go-spice/spice/red"
+	"github.com/jsimonetti/go-spice/red"
 )
 
 func readMiniHeaderPacket(conn io.Reader) (uint16, []byte, error) {

@@ -13,7 +13,7 @@ import (
 
 	"context"
 
-	"github.com/jsimonetti/go-spice/spice/red"
+	"github.com/jsimonetti/go-spice/red"
 )
 
 type tenantHandshake struct {
