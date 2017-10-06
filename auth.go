@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"net"
 
+	"bytes"
 	"crypto/sha1"
 )
 
@@ -48,7 +49,7 @@ type AuthContext struct {
 }
 
 func (a *AuthContext) ReadTicket() []byte {
-	if len(a.ticketCrypted) != 0 {
+	if a.ticketCrypted != nil {
 		return a.ticketCrypted
 	}
 	a.ticketCrypted = make([]byte, 128)
@@ -80,8 +81,8 @@ func (a *AuthContext) Password() string {
 		return ""
 	}
 
-	// do we need to remove this last char??
-	a.ticketUncrypted = plaintext[:len(plaintext)-1]
+	// trim trailing nul
+	a.ticketUncrypted = bytes.Trim(plaintext, "\x00")
 
 	return string(a.ticketUncrypted)
 }
