@@ -3,6 +3,8 @@ package spice
 import (
 	"crypto/rsa"
 	"net"
+
+	"github.com/jsimonetti/go-spice/red"
 )
 
 type Authenticator interface {
@@ -14,9 +16,8 @@ type Authenticator interface {
 type AuthMethod uint8
 
 const (
-	_ AuthMethod = iota
-	AuthMethodSpice
-	AuthMethodSASL
+	AuthMethodSpice = AuthMethod(red.CapabilityAuthSpice)
+	AuthMethodSASL  = AuthMethod(red.CapabilityAuthSASL)
 )
 
 var _ Authenticator = &NOOPAuth{}

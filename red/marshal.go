@@ -47,28 +47,32 @@ const (
 type ChannelType uint8
 
 const (
-	_ ChannelType = iota
-	ChannelMain
-	ChannelDisplay
-	ChannelInputs
-	ChannelCursor
-	ChannelPlayback
-	ChannelRecord
+	ChannelMain     ChannelType = 1
+	ChannelDisplay  ChannelType = 2
+	ChannelInputs   ChannelType = 3
+	ChannelCursor   ChannelType = 4
+	ChannelPlayback ChannelType = 5
+	ChannelRecord   ChannelType = 6
 )
 
 type ErrorCode uint32
 
 const (
-	ErrorOk ErrorCode = iota
-	ErrorError
-	ErrorInvalidMagic
-	ErrorInvalidData
-	ErrorVersionMismatch
-	ErrorNeedSecured
-	ErrorNeedUnsecured
-	ErrorPermissionDenied
-	ErrorBadConnectionID
-	ErrorChannelNotAvailable
+	ErrorOk                  ErrorCode = 0
+	ErrorError               ErrorCode = 1
+	ErrorInvalidMagic        ErrorCode = 2
+	ErrorInvalidData         ErrorCode = 3
+	ErrorVersionMismatch     ErrorCode = 4
+	ErrorNeedSecured         ErrorCode = 5
+	ErrorNeedUnsecured       ErrorCode = 6
+	ErrorPermissionDenied    ErrorCode = 7
+	ErrorBadConnectionID     ErrorCode = 8
+	ErrorChannelNotAvailable ErrorCode = 9
 )
 
 const TicketPubkeyBytes = 162
+
+const (
+	CapabilityAuthSpice uint8 = 1
+	CapabilityAuthSASL  uint8 = 2
+)
