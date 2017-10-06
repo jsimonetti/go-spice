@@ -1,11 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha1"
-	"fmt"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/jsimonetti/go-spice"
@@ -28,33 +23,10 @@ type AuthSpice struct {
 }
 
 func (a *AuthSpice) Next(ctx *spice.AuthContext) (bool, string, error) {
-
-	ticket := ctx.ReadTicket()
-	if ticket == nil {
-		err := fmt.Errorf("could not read ticket from client")
-		logrus.WithError(err).Error()
-		return false, "", err
-	}
-
-	key := ctx.PrivateKey()
-	if key == nil {
-		err := fmt.Errorf("invalid session private key")
-		logrus.WithError(err).Error()
-		return false, "", err
-	}
-
-	rng := rand.Reader
-	plaintext, err := rsa.DecryptOAEP(sha1.New(), rng, key, ticket, []byte{})
-	if err != nil {
-		logrus.WithError(err).Error("error decrypting ticket")
-		return false, "", fmt.Errorf("error decrypting ticket: %s", err)
-	}
-
-	// do we need to remove this last char??
-	pass := string(plaintext[:len(plaintext)-1])
+	pass := ctx.Password()
 
 	if ctx.OTP() != "" && ctx.OTP() == pass {
-		logrus.Debug("OTP found and matches ticket")
+		logrus.Debug("OTP found and matches password")
 		return true, ctx.Address(), nil
 	}
 

@@ -1,8 +1,11 @@
 package spice
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
 	"net"
+
+	"crypto/sha1"
 
 	"github.com/jsimonetti/go-spice/red"
 )
@@ -36,18 +39,24 @@ func (a *NOOPAuth) Method() AuthMethod {
 func (a *NOOPAuth) Init() error { return nil }
 
 type AuthContext struct {
-	tenant     net.Conn
+	tenant          net.Conn
+	ticketCrypted   []byte
+	ticketUncrypted []byte
+
 	privateKey *rsa.PrivateKey // needed for Spice auth
 	otp        string          // previously authenticated ticket
 	address    string          // destination compute node
 }
 
 func (a *AuthContext) ReadTicket() []byte {
-	ticket := make([]byte, 128)
-	if _, err := a.tenant.Read(ticket); err != nil {
+	if len(a.ticketCrypted) != 0 {
+		return a.ticketCrypted
+	}
+	a.ticketCrypted = make([]byte, 128)
+	if _, err := a.tenant.Read(a.ticketCrypted); err != nil {
 		return nil
 	}
-	return ticket
+	return a.ticketCrypted
 }
 
 func (a *AuthContext) PrivateKey() *rsa.PrivateKey {
@@ -56,6 +65,26 @@ func (a *AuthContext) PrivateKey() *rsa.PrivateKey {
 		return nil
 	}
 	return key
+}
+
+func (a *AuthContext) Password() string {
+	crypted := a.ReadTicket()
+
+	key := a.PrivateKey()
+	if key == nil {
+		return ""
+	}
+
+	rng := rand.Reader
+	plaintext, err := rsa.DecryptOAEP(sha1.New(), rng, key, crypted, []byte{})
+	if err != nil {
+		return ""
+	}
+
+	// do we need to remove this last char??
+	a.ticketUncrypted = plaintext[:len(plaintext)-1]
+
+	return string(a.ticketUncrypted)
 }
 
 func (a *AuthContext) OTP() string {
