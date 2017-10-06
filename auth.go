@@ -6,8 +6,6 @@ import (
 	"net"
 
 	"crypto/sha1"
-
-	"github.com/jsimonetti/go-spice/red"
 )
 
 type Authenticator interface {
@@ -16,11 +14,12 @@ type Authenticator interface {
 	Init() error
 }
 
+//go:generate stringer -type=AuthMethod
 type AuthMethod uint8
 
 const (
-	AuthMethodSpice = AuthMethod(red.CapabilityAuthSpice)
-	AuthMethodSASL  = AuthMethod(red.CapabilityAuthSASL)
+	AuthMethodSpice AuthMethod = 1
+	AuthMethodSASL  AuthMethod = 2
 )
 
 var _ Authenticator = &NOOPAuth{}

@@ -44,6 +44,7 @@ const (
 	VersionMinor uint32 = 2
 )
 
+//go:generate stringer -type=ChannelType
 type ChannelType uint8
 
 const (
@@ -55,6 +56,7 @@ const (
 	ChannelRecord   ChannelType = 6
 )
 
+//go:generate stringer -type=ErrorCode
 type ErrorCode uint32
 
 const (
@@ -72,7 +74,10 @@ const (
 
 const TicketPubkeyBytes = 162
 
+//go:generate stringer -type=Capability
+type Capability uint8
+
 const (
-	CapabilityAuthSpice uint8 = 1
-	CapabilityAuthSASL  uint8 = 2
+	CapabilityAuthSpice Capability = 1
+	CapabilityAuthSASL  Capability = 2
 )

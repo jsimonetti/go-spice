@@ -22,7 +22,7 @@ type Proxy struct {
 	dial func(ctx context.Context, network, addr string) (net.Conn, error)
 
 	// sessionTable
-	sessionTable sessionTable
+	sessionTable *sessionTable
 }
 
 func New(options ...Option) (*Proxy, error) {
@@ -47,7 +47,7 @@ func New(options ...Option) (*Proxy, error) {
 		proxy.dial = defaultDialer()
 	}
 
-	table := sessionTable{}
+	table := &sessionTable{}
 	table.entries = make(map[SessionID]*sessionEntry)
 	proxy.sessionTable = table
 
@@ -72,7 +72,6 @@ func (p *Proxy) Serve(l net.Listener) error {
 		}
 		go p.ServeConn(tenant)
 	}
-	return nil
 }
 
 // ServeConn is used to serve a single connection.
