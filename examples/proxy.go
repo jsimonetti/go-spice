@@ -8,9 +8,13 @@ import (
 
 func main() {
 
-	log := logrus.New()
+	log := logrus.New().WithField("component", "proxy")
 
-	proxy, err := spice.New(spice.WithLogger(log), spice.WithAuthenticator(&AuthSpice{log}))
+	authSpice := &AuthSpice{
+		log: log,
+	}
+
+	proxy, err := spice.New(spice.WithLogger(log), spice.WithAuthenticator(authSpice))
 	if err != nil {
 		log.Fatalf("error: %s", err)
 	}
@@ -19,25 +23,25 @@ func main() {
 }
 
 type AuthSpice struct {
-	log *logrus.Logger
+	log *logrus.Entry
 }
 
 func (a *AuthSpice) Next(ctx *spice.AuthContext) (bool, string, error) {
 	pass := ctx.Password()
 
 	if ctx.OTP() != "" && ctx.OTP() == pass {
-		logrus.Debug("OTP found and matches password")
+		a.log.Debug("OTP found and matches password")
 		return true, ctx.Address(), nil
 	}
 
 	if destination, ok := a.resolveOTPKey(pass); ok {
-		logrus.Debug("Ticket validated, compute node at %s", destination)
+		a.log.Debug("Ticket validated, compute node at %s", destination)
 		ctx.SetOTP(pass)
 		ctx.SetAddress(destination)
 		return true, ctx.Address(), nil
 	}
 
-	logrus.Warn("authentication failed")
+	a.log.Warn("authentication failed")
 	return false, "", nil
 }
 
@@ -47,13 +51,13 @@ func (a *AuthSpice) Method() spice.AuthMethod {
 
 func (a *AuthSpice) resolveOTPKey(pass string) (string, bool) {
 	if pass == "test" {
-		logrus.Warn("bogus password check and compute node")
+		a.log.Warn("bogus password check and compute node")
 		return "127.0.0.1:5900", true
 	}
 	return "", false
 }
 
 func (a *AuthSpice) Init() error {
-	logrus.Debug("AuthSpice initialised")
+	a.log.Debug("AuthSpice initialised")
 	return nil
 }

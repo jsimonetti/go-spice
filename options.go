@@ -15,9 +15,9 @@ func (p *Proxy) SetOption(option Option) error {
 	return option(p)
 }
 
-func WithLogger(log *logrus.Logger) Option {
+func WithLogger(log *logrus.Entry) Option {
 	return func(p *Proxy) error {
-		p.log = log.WithField("app", "spiceProxy")
+		p.log = log
 		return nil
 	}
 }
