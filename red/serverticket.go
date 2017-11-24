@@ -1,5 +1,7 @@
 package red
 
+import "encoding/binary"
+
 type ServerTicket struct {
 	Result ErrorCode
 }
@@ -12,7 +14,9 @@ func NewServerTicket() SpicePacket {
 // MarshalBinary marshals an ArtPollPacket into a byte slice.
 func (p *ServerTicket) MarshalBinary() ([]byte, error) {
 	p.finish()
-	return marshalPacket(p)
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b[0:4], uint32(p.Result))
+	return b, nil
 }
 
 // UnmarshalBinary unmarshals the contents of a byte slice into an ArtPollPacket.
@@ -20,7 +24,8 @@ func (p *ServerTicket) UnmarshalBinary(b []byte) error {
 	if len(b) < 4 {
 		return errInvalidPacket
 	}
-	return unmarshalPacket(p, b)
+	p.Result = ErrorCode(binary.LittleEndian.Uint32(b[0:4]))
+	return p.validate()
 }
 
 // validate is used to validate the Packet.
