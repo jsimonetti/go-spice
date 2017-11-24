@@ -1,7 +1,7 @@
 package spice
 
 import (
-	"bufio"
+	"errors"
 	"io"
 	"net"
 
@@ -78,25 +78,23 @@ func (c *computeHandshake) clientLinkStage(destination string) error {
 		return err
 	}
 
-	bufConn := bufio.NewReader(c.compute)
-
 	// handle send client LinkMessage
-	if err := c.clientLinkMessage(bufConn, c.compute); err != nil {
+	if err := c.clientLinkMessage(c.compute, c.compute); err != nil {
 		return err
 	}
 
 	// handle send auth method
-	if err := c.clientAuthMethod(bufConn, c.compute); err != nil {
+	if err := c.clientAuthMethod(c.compute, c.compute); err != nil {
 		return err
 	}
 
 	// Handle 3rd Client Ticket
-	if err := c.clientTicket(bufConn, c.compute); err != nil {
+	if err := c.clientTicket(c.compute, c.compute); err != nil {
 		return err
 	}
 
 	if c.channelType == red.ChannelMain {
-		if err := c.readServerInit(bufConn, c.tenant); err != nil {
+		if err := c.readServerInit(c.compute, c.tenant); err != nil {
 			return err
 		}
 	}
@@ -116,9 +114,13 @@ func (c *computeHandshake) readServerInit(in io.Reader, out io.Writer) error {
 		return err
 	}
 
-	if mType == 103 { // Server INIT
-		c.sessionID = binary.LittleEndian.Uint32(b[6:10])
+	if mType != 103 { // Server INIT
+		err := errors.New("expected server INIT")
+		c.proxy.log.WithError(err).Error("read server INIT")
+		return err
 	}
+
+	c.sessionID = binary.LittleEndian.Uint32(b[6:10])
 
 	if _, err := out.Write(b); err != nil {
 		c.proxy.log.WithError(err).Error("write server Init")
