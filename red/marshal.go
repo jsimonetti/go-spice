@@ -74,6 +74,7 @@ const (
 )
 
 const TicketPubkeyBytes = 162
+const ClientTicketBytes = 128
 
 //go:generate stringer -type=Capability
 type Capability uint8
