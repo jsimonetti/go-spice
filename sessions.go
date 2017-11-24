@@ -5,13 +5,11 @@ import (
 	"sync"
 )
 
-type SessionID [4]uint8
-
 // sessionTable holds a mapping of SessionID and destination node address
 // map[sessionid]address
 type sessionTable struct {
 	lock    sync.Mutex
-	entries map[SessionID]*sessionEntry
+	entries map[uint32]*sessionEntry
 }
 
 type sessionEntry struct {
@@ -20,14 +18,14 @@ type sessionEntry struct {
 	otp     string
 }
 
-func (s *sessionTable) Lookup(session SessionID) bool {
+func (s *sessionTable) Lookup(session uint32) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	_, ok := s.entries[session]
 	return ok
 }
 
-func (s *sessionTable) OTP(session SessionID) string {
+func (s *sessionTable) OTP(session uint32) string {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.entries[session]; ok {
@@ -36,7 +34,7 @@ func (s *sessionTable) OTP(session SessionID) string {
 	return ""
 }
 
-func (s *sessionTable) Add(session SessionID, destination string, otp string) {
+func (s *sessionTable) Add(session uint32, destination string, otp string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.entries[session]; !ok {
@@ -45,7 +43,7 @@ func (s *sessionTable) Add(session SessionID, destination string, otp string) {
 	return
 }
 
-func (s *sessionTable) Connect(session SessionID) (string, error) {
+func (s *sessionTable) Connect(session uint32) (string, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.entries[session]; !ok {
@@ -55,7 +53,7 @@ func (s *sessionTable) Connect(session SessionID) (string, error) {
 	return s.entries[session].address, nil
 }
 
-func (s *sessionTable) Disconnect(session SessionID) {
+func (s *sessionTable) Disconnect(session uint32) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.entries[session]; !ok {

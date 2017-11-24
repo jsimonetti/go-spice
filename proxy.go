@@ -6,13 +6,14 @@ import (
 
 	"context"
 
+	"github.com/jsimonetti/go-spice/red"
 	"github.com/sirupsen/logrus"
 )
 
 type Proxy struct {
 	// WithAuthMethod can be provided to implement custom authentication
 	// By default, "auth-less" mode is enabled.
-	authenticator map[AuthMethod]Authenticator
+	authenticator map[red.AuthMethod]Authenticator
 
 	// WithLogger can be used to provide a custom log target.
 	// Defaults to stdout.
@@ -27,7 +28,7 @@ type Proxy struct {
 
 func New(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{}
-	proxy.authenticator = make(map[AuthMethod]Authenticator)
+	proxy.authenticator = make(map[red.AuthMethod]Authenticator)
 
 	for _, option := range options {
 		if err := proxy.SetOption(option); err != nil {
@@ -36,7 +37,7 @@ func New(options ...Option) (*Proxy, error) {
 	}
 
 	if len(proxy.authenticator) < 1 {
-		proxy.authenticator[AuthMethodSpice] = &NOOPAuth{}
+		proxy.authenticator[red.AuthMethodSpice] = &NOOPAuth{}
 	}
 
 	if proxy.log == nil {
@@ -48,7 +49,7 @@ func New(options ...Option) (*Proxy, error) {
 	}
 
 	table := &sessionTable{}
-	table.entries = make(map[SessionID]*sessionEntry)
+	table.entries = make(map[uint32]*sessionEntry)
 	proxy.sessionTable = table
 
 	return proxy, nil

@@ -7,21 +7,15 @@ import (
 
 	"bytes"
 	"crypto/sha1"
+
+	"github.com/jsimonetti/go-spice/red"
 )
 
 type Authenticator interface {
 	Next(*AuthContext) (accessGranted bool, computeDestination string, err error)
-	Method() AuthMethod
+	Method() red.AuthMethod
 	Init() error
 }
-
-//go:generate stringer -type=AuthMethod
-type AuthMethod uint8
-
-const (
-	AuthMethodSpice AuthMethod = 1
-	AuthMethodSASL  AuthMethod = 2
-)
 
 var _ Authenticator = &NOOPAuth{}
 
@@ -32,8 +26,8 @@ func (a *NOOPAuth) Next(ctx *AuthContext) (bool, string, error) {
 	return true, "127.0.0.1:5900", nil
 }
 
-func (a *NOOPAuth) Method() AuthMethod {
-	return AuthMethodSpice
+func (a *NOOPAuth) Method() red.AuthMethod {
+	return red.AuthMethodSpice
 }
 
 func (a *NOOPAuth) Init() error { return nil }

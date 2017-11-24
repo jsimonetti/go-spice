@@ -19,12 +19,12 @@ type tenantHandshake struct {
 
 	done bool
 
-	tenantAuthMethod AuthMethod
+	tenantAuthMethod red.AuthMethod
 	privateKey       *rsa.PrivateKey
 
 	channelID   uint8
 	channelType red.ChannelType
-	sessionID   [4]uint8
+	sessionID   uint32
 
 	otp         string // one time password
 	destination string // compute address
@@ -90,7 +90,7 @@ func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
 		return err
 	}
 
-	c.tenantAuthMethod = AuthMethod(b[0])
+	c.tenantAuthMethod = red.AuthMethod(b[0])
 
 	var auth Authenticator
 	var ok bool
@@ -160,12 +160,12 @@ func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
 	}
 
 	reply := red.ServerLinkMessage{
-		Error:         red.ErrorOk,
-		PubKey:        pubkey,
-		CommonCaps:    1,
-		ChannelCaps:   1,
-		Capabilities1: [4]byte{0x0b, 0x00, 0x00, 0x00},
-		Capabilities2: [4]byte{0x09, 0x00, 0x00, 0x00},
+		Error:               red.ErrorOk,
+		PubKey:              pubkey,
+		CommonCaps:          1,
+		ChannelCaps:         1,
+		CommonCapabilities:  []uint32{0x0b},
+		ChannelCapabilities: []uint32{0x09},
 	}
 	b, err := reply.MarshalBinary()
 	if err != nil {

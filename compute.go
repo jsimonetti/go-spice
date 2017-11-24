@@ -16,6 +16,8 @@ import (
 
 	"context"
 
+	"encoding/binary"
+
 	"github.com/jsimonetti/go-spice/red"
 )
 
@@ -26,7 +28,7 @@ func readMiniHeaderPacket(conn io.Reader) (uint16, []byte, error) {
 		return 0, nil, err
 	}
 
-	header := &red.RedMiniDataHeader{}
+	header := &red.MiniDataHeader{}
 	if err := header.UnmarshalBinary(headerBytes); err != nil {
 		return 0, nil, err
 	}
@@ -58,7 +60,7 @@ type computeHandshake struct {
 
 	channelID   uint8
 	channelType red.ChannelType
-	sessionID   [4]uint8
+	sessionID   uint32
 
 	computePubKey [red.TicketPubkeyBytes]byte
 }
@@ -115,7 +117,7 @@ func (c *computeHandshake) readServerInit(in io.Reader, out io.Writer) error {
 	}
 
 	if mType == 103 { // Server INIT
-		copy(c.sessionID[:], b[6:10])
+		c.sessionID = binary.LittleEndian.Uint32(b[6:10])
 	}
 
 	if _, err := out.Write(b); err != nil {
@@ -182,8 +184,8 @@ func (c *computeHandshake) clientTicket(in io.Reader, out io.Writer) error {
 }
 
 func (c *computeHandshake) clientAuthMethod(in io.Reader, out io.Writer) error {
-	myAuthMethod := &red.ClientAuthMethodSelect{
-		Method: [4]byte{0x01},
+	myAuthMethod := &red.ClientAuthMethod{
+		Method: red.AuthMethodSpice,
 	}
 
 	mb, err := myAuthMethod.MarshalBinary()
@@ -201,14 +203,14 @@ func (c *computeHandshake) clientAuthMethod(in io.Reader, out io.Writer) error {
 
 func (c *computeHandshake) clientLinkMessage(in io.Reader, out io.Writer) error {
 	myLink := &red.ClientLinkMessage{
-		ChannelID:     c.channelID,
-		ChannelType:   c.channelType,
-		SessionID:     c.sessionID,
-		CommonCaps:    1,
-		ChannelCaps:   1,
-		CapsOffset:    18,
-		Capabilities1: [4]byte{0x0d},
-		Capabilities2: [4]byte{0x0f},
+		ChannelID:           c.channelID,
+		ChannelType:         c.channelType,
+		SessionID:           c.sessionID,
+		CommonCaps:          1,
+		ChannelCaps:         1,
+		CapsOffset:          18,
+		CommonCapabilities:  []uint32{0x0d},
+		ChannelCapabilities: []uint32{0x0f},
 	}
 
 	mb, err := myLink.MarshalBinary()

@@ -4,6 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/jsimonetti/go-spice"
+	"github.com/jsimonetti/go-spice/red"
 )
 
 func main() {
@@ -45,8 +46,8 @@ func (a *AuthSpice) Next(ctx *spice.AuthContext) (bool, string, error) {
 	return false, "", nil
 }
 
-func (a *AuthSpice) Method() spice.AuthMethod {
-	return spice.AuthMethodSpice
+func (a *AuthSpice) Method() red.AuthMethod {
+	return red.AuthMethodSpice
 }
 
 func (a *AuthSpice) resolveOTPKey(pass string) (string, bool) {
