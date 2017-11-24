@@ -215,7 +215,7 @@ func (c *computeHandshake) clientLinkMessage(in io.Reader, out io.Writer) error 
 	if err != nil {
 		return err
 	}
-	header := red.RedLinkHeader{
+	header := red.LinkHeader{
 		Size: myLink.CapsOffset + 8,
 	}
 	b2, err := header.MarshalBinary()

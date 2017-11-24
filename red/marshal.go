@@ -10,7 +10,8 @@ import (
 // Various errors which may occur when attempting to marshal or unmarshal
 // a SpicePacket to and from its binary form.
 var (
-	errInvalidPacket = errors.New("invalid Spice packet")
+	errInvalidPacket  = errors.New("invalid Spice packet")
+	errInvalidVersion = errors.New("invalid version")
 )
 
 // SpicePacket is the interface used for passing around different kinds of packets.

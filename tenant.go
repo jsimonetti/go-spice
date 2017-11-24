@@ -172,7 +172,7 @@ func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
 		return err
 	}
 
-	header := red.RedLinkHeader{
+	header := red.LinkHeader{
 		Size: reply.CapsOffset + 8,
 	}
 	b2, err := header.MarshalBinary()
@@ -215,7 +215,7 @@ func readLinkPacket(conn io.Reader) ([]byte, error) {
 		return nil, err
 	}
 
-	header := &red.RedLinkHeader{}
+	header := &red.LinkHeader{}
 	if err := header.UnmarshalBinary(headerBytes); err != nil {
 		return nil, err
 	}

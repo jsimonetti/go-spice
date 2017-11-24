@@ -1,6 +1,14 @@
 package red
 
-type RedLinkHeader struct {
+import (
+	"bytes"
+
+	"encoding/binary"
+
+	"github.com/davecgh/go-spew/spew"
+)
+
+type LinkHeader struct {
 	// Magic must be equal to Magic
 	Magic [4]uint8
 
@@ -15,28 +23,46 @@ type RedLinkHeader struct {
 }
 
 // MarshalBinary marshals an ArtPollPacket into a byte slice.
-func (p *RedLinkHeader) MarshalBinary() ([]byte, error) {
+func (p *LinkHeader) MarshalBinary() ([]byte, error) {
 	p.finish()
-	return marshalPacket(p)
+	b := make([]byte, 16)
+
+	copy(b[0:4], p.Magic[0:4])
+	binary.LittleEndian.PutUint32(b[4:8], p.Major)
+	binary.LittleEndian.PutUint32(b[8:12], p.Minor)
+	binary.LittleEndian.PutUint32(b[12:16], p.Size)
+
+	return b, nil
 }
 
 // UnmarshalBinary unmarshals the contents of a byte slice into a Packet.
-func (p *RedLinkHeader) UnmarshalBinary(b []byte) error {
+func (p *LinkHeader) UnmarshalBinary(b []byte) error {
 	if len(b) < 16 {
 		return errInvalidPacket
 	}
-	return unmarshalPacket(p, b)
+
+	copy(p.Magic[0:4], b[0:4])
+
+	p.Major = binary.LittleEndian.Uint32(b[4:8])
+	p.Minor = binary.LittleEndian.Uint32(b[8:12])
+	p.Size = binary.LittleEndian.Uint32(b[12:16])
+
+	return p.validate()
 }
 
-func (p *RedLinkHeader) validate() error {
-	//if !bytes.Equal(p.Magic[:], Magic[:]) {
-	//	return errInvalidPacket
-	//}
+func (p *LinkHeader) validate() error {
+	if !bytes.Equal(p.Magic[:], Magic[:]) {
+		spew.Dump(p.Magic[:], Magic[:])
+		return errInvalidPacket
+	}
+	if p.Major != VersionMajor || p.Minor != VersionMinor {
+		return errInvalidVersion
+	}
 	return nil
 }
 
 // finish is used to finish the Packet for sending.
-func (p *RedLinkHeader) finish() {
+func (p *LinkHeader) finish() {
 	p.Magic = Magic
 	p.Major = VersionMajor
 	p.Minor = VersionMinor
