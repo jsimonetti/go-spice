@@ -3,6 +3,7 @@ package red
 import "encoding/binary"
 
 type ClientAuthMethod struct {
+	// Method is the authentication method selected by the client
 	Method AuthMethod
 }
 
@@ -11,7 +12,7 @@ func NewClientAuthMethodSelect() SpicePacket {
 	return &ClientAuthMethod{}
 }
 
-// MarshalBinary marshals an ArtPollPacket into a byte slice.
+// MarshalBinary marshals an Packet into a byte slice.
 func (p *ClientAuthMethod) MarshalBinary() ([]byte, error) {
 	p.finish()
 	b := make([]byte, 4)
@@ -19,7 +20,7 @@ func (p *ClientAuthMethod) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtPollPacket.
+// UnmarshalBinary unmarshals the contents of a byte slice into a Packet.
 func (p *ClientAuthMethod) UnmarshalBinary(b []byte) error {
 	if len(b) < 4 {
 		return errInvalidPacket
@@ -39,11 +40,3 @@ func (p *ClientAuthMethod) validate() error {
 // finish is used to finish the Packet for sending.
 func (p *ClientAuthMethod) finish() {
 }
-
-//go:generate stringer -type=AuthMethod
-type AuthMethod uint32
-
-const (
-	AuthMethodSpice AuthMethod = 1
-	AuthMethodSASL  AuthMethod = 2
-)

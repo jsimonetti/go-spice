@@ -33,7 +33,7 @@ func NewServerLinkMessage() SpicePacket {
 	return &ServerLinkMessage{}
 }
 
-// MarshalBinary marshals an ArtPollPacket into a byte slice.
+// MarshalBinary marshals a Packet into a byte slice.
 func (p *ServerLinkMessage) MarshalBinary() ([]byte, error) {
 	p.finish()
 
@@ -63,7 +63,7 @@ func (p *ServerLinkMessage) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtPollPacket.
+// UnmarshalBinary unmarshals the contents of a byte slice into a Packet.
 func (p *ServerLinkMessage) UnmarshalBinary(b []byte) error {
 	if len(b) < 178 {
 		return errInvalidPacket

@@ -11,7 +11,7 @@ func NewServerTicket() SpicePacket {
 	return &ServerTicket{}
 }
 
-// MarshalBinary marshals an ArtPollPacket into a byte slice.
+// MarshalBinary marshals a Packet into a byte slice.
 func (p *ServerTicket) MarshalBinary() ([]byte, error) {
 	p.finish()
 	b := make([]byte, 4)
@@ -19,7 +19,7 @@ func (p *ServerTicket) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtPollPacket.
+// UnmarshalBinary unmarshals the contents of a byte slice into a Packet.
 func (p *ServerTicket) UnmarshalBinary(b []byte) error {
 	if len(b) < 4 {
 		return errInvalidPacket

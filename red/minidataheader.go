@@ -1,34 +1,39 @@
 package red
 
-type RedMiniDataHeader struct {
+import "encoding/binary"
+
+type MiniDataHeader struct {
 	// MessageType is type of message
 	MessageType uint16
 
-	// Major must be equal to RED_VERSION_MAJOR
+	// Size in bytes following this field to the end of this message
 	Size uint32
 }
 
-// MarshalBinary marshals an ArtPollPacket into a byte slice.
-func (p *RedMiniDataHeader) MarshalBinary() ([]byte, error) {
+// MarshalBinary marshals an Packet into a byte slice.
+func (p *MiniDataHeader) MarshalBinary() ([]byte, error) {
 	p.finish()
-	return marshalPacket(p)
+	b := make([]byte, 6)
+	binary.LittleEndian.PutUint16(b[0:2], p.MessageType)
+	binary.LittleEndian.PutUint32(b[2:6], p.Size)
+	return b, nil
 }
 
 // UnmarshalBinary unmarshals the contents of a byte slice into a Packet.
-func (p *RedMiniDataHeader) UnmarshalBinary(b []byte) error {
-	if len(b) != 6 {
+func (p *MiniDataHeader) UnmarshalBinary(b []byte) error {
+	if len(b) < 6 {
 		return errInvalidPacket
 	}
-	return unmarshalPacket(p, b)
+	p.MessageType = binary.LittleEndian.Uint16(b[0:2])
+	p.Size = binary.LittleEndian.Uint32(b[2:6])
+	return p.validate()
 }
 
-func (p *RedMiniDataHeader) validate() error {
-	//if !bytes.Equal(p.Magic[:], Magic[:]) {
-	//	return errInvalidPacket
-	//}
+// validate is used to validate the Packet.
+func (p *MiniDataHeader) validate() error {
 	return nil
 }
 
 // finish is used to finish the Packet for sending.
-func (p *RedMiniDataHeader) finish() {
+func (p *MiniDataHeader) finish() {
 }

@@ -22,7 +22,7 @@ type LinkHeader struct {
 	Size uint32
 }
 
-// MarshalBinary marshals an ArtPollPacket into a byte slice.
+// MarshalBinary marshals a Packet into a byte slice.
 func (p *LinkHeader) MarshalBinary() ([]byte, error) {
 	p.finish()
 	b := make([]byte, 16)
@@ -50,6 +50,7 @@ func (p *LinkHeader) UnmarshalBinary(b []byte) error {
 	return p.validate()
 }
 
+// validate is used to validate the Packet.
 func (p *LinkHeader) validate() error {
 	if !bytes.Equal(p.Magic[:], Magic[:]) {
 		spew.Dump(p.Magic[:], Magic[:])

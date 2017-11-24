@@ -1,9 +1,7 @@
 package red
 
 import (
-	"bytes"
 	"encoding"
-	"encoding/binary"
 	"errors"
 )
 
@@ -22,27 +20,19 @@ type SpicePacket interface {
 	finish()
 }
 
-func marshalPacket(p SpicePacket) ([]byte, error) {
-	var buf bytes.Buffer
-	if err := binary.Write(&buf, binary.LittleEndian, p); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func unmarshalPacket(p SpicePacket, b []byte) error {
-	buf := bytes.NewReader(b)
-	if err := binary.Read(buf, binary.LittleEndian, p); err != nil {
-		return err
-	}
-	return p.validate()
-}
-
 var Magic = [4]uint8{0x52, 0x45, 0x44, 0x51}
 
 const (
 	VersionMajor uint32 = 2
 	VersionMinor uint32 = 2
+)
+
+//go:generate stringer -type=AuthMethod
+type AuthMethod uint32
+
+const (
+	AuthMethodSpice AuthMethod = 1
+	AuthMethodSASL  AuthMethod = 2
 )
 
 //go:generate stringer -type=ChannelType

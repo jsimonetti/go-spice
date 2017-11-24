@@ -6,6 +6,7 @@ import (
 )
 
 type ClientTicket struct {
+	// Ticket is the RSA encrypted ticket
 	Ticket [ClientTicketBytes]byte
 }
 
@@ -14,7 +15,7 @@ func NewClientTicket() SpicePacket {
 	return &ClientTicket{}
 }
 
-// MarshalBinary marshals an ArtPollPacket into a byte slice.
+// MarshalBinary marshals a Packet into a byte slice.
 func (p *ClientTicket) MarshalBinary() ([]byte, error) {
 	p.finish()
 
@@ -26,7 +27,7 @@ func (p *ClientTicket) MarshalBinary() ([]byte, error) {
 	return buf.Bytes()[0:ClientTicketBytes], nil
 }
 
-// UnmarshalBinary unmarshals the contents of a byte slice into an ArtPollPacket.
+// UnmarshalBinary unmarshals the contents of a byte slice into a Packet.
 func (p *ClientTicket) UnmarshalBinary(b []byte) error {
 	if len(b) != ClientTicketBytes {
 		return errInvalidPacket
