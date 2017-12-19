@@ -2,14 +2,12 @@ package spice
 
 import (
 	"bufio"
-	"io"
-	"net"
-
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-
 	"fmt"
+	"io"
+	"net"
 
 	"github.com/jsimonetti/go-spice/red"
 )
@@ -27,7 +25,7 @@ type tenantHandshake struct {
 	sessionID   uint32
 
 	otp         string // one time password
-	destination string // compute address
+	destination string // compute computeAddress
 }
 
 func (c *tenantHandshake) Done() bool {
@@ -102,7 +100,7 @@ func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
 		return fmt.Errorf("unavailable auth method %s", c.tenantAuthMethod)
 	}
 
-	authCtx := &AuthContext{tenant: conn, privateKey: c.privateKey, otp: c.otp, address: c.destination}
+	authCtx := &authSpiceContext{tenant: conn, privateKey: c.privateKey, token: c.otp, computeAddress: c.destination}
 
 	result, destination, err := auth.Next(authCtx)
 	if err != nil {
@@ -110,7 +108,7 @@ func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
 		return err
 	}
 
-	c.otp = authCtx.otp
+	c.otp = authCtx.token
 	c.destination = destination
 
 	if !result {

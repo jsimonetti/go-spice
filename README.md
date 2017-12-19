@@ -14,4 +14,4 @@ Not planned, but nice to have
 - implement SASL authentication
 
 
-See [example](examples/proxy.go) for an example including an Authenticator
+See [example](example/proxy.go) for an example including an Authenticator

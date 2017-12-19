@@ -1,31 +1,34 @@
 package spice
 
 import (
+	"context"
 	"fmt"
 	"net"
-
-	"context"
 
 	"github.com/jsimonetti/go-spice/red"
 	"github.com/sirupsen/logrus"
 )
 
+// Proxy is the server object for this spice proxy.
 type Proxy struct {
 	// WithAuthMethod can be provided to implement custom authentication
-	// By default, "auth-less" mode is enabled.
+	// By default, "auth-less" no-op mode is enabled.
 	authenticator map[red.AuthMethod]Authenticator
 
-	// WithLogger can be used to provide a custom log target.
-	// Defaults to stdout.
+	// WithLogger can be used to provide a custom logger.
+	// Defaults to a logrus implementation.
 	log *logrus.Entry
 
-	// WithDialer Optional function for dialing out
+	// WithDialer can be used to provide a custom dialer to reach compute nodes
+	// the network is always of type 'tcp' and the computeAddress is the compute node
+	// computeAddress that is return by an Authenticator.
 	dial func(ctx context.Context, network, addr string) (net.Conn, error)
 
-	// sessionTable
+	// sessionTable holds all the sessions for this proxy
 	sessionTable *sessionTable
 }
 
+// New returns a new *Proxy with the options applied
 func New(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{}
 	proxy.authenticator = make(map[red.AuthMethod]Authenticator)

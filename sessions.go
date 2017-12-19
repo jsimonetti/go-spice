@@ -5,17 +5,17 @@ import (
 	"sync"
 )
 
-// sessionTable holds a mapping of SessionID and destination node address
-// map[sessionid]address
+// sessionTable holds a mapping of SessionID and destination node computeAddress
+// map[sessionid]computeAddress
 type sessionTable struct {
 	lock    sync.Mutex
 	entries map[uint32]*sessionEntry
 }
 
 type sessionEntry struct {
-	address string
-	count   int
-	otp     string
+	computeAddress string
+	usageCount     int
+	authToken      string
 }
 
 func (s *sessionTable) Lookup(session uint32) bool {
@@ -29,7 +29,7 @@ func (s *sessionTable) OTP(session uint32) string {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.entries[session]; ok {
-		return s.entries[session].otp
+		return s.entries[session].authToken
 	}
 	return ""
 }
@@ -38,7 +38,7 @@ func (s *sessionTable) Add(session uint32, destination string, otp string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if _, ok := s.entries[session]; !ok {
-		s.entries[session] = &sessionEntry{address: destination, count: 1, otp: otp}
+		s.entries[session] = &sessionEntry{computeAddress: destination, usageCount: 1, authToken: otp}
 	}
 	return
 }
@@ -49,8 +49,8 @@ func (s *sessionTable) Connect(session uint32) (string, error) {
 	if _, ok := s.entries[session]; !ok {
 		return "", fmt.Errorf("no such session in table")
 	}
-	s.entries[session].count = s.entries[session].count + 1
-	return s.entries[session].address, nil
+	s.entries[session].usageCount = s.entries[session].usageCount + 1
+	return s.entries[session].computeAddress, nil
 }
 
 func (s *sessionTable) Disconnect(session uint32) {
@@ -59,8 +59,8 @@ func (s *sessionTable) Disconnect(session uint32) {
 	if _, ok := s.entries[session]; !ok {
 		return
 	}
-	s.entries[session].count = s.entries[session].count - 1
-	if s.entries[session].count < 1 {
+	s.entries[session].usageCount = s.entries[session].usageCount - 1
+	if s.entries[session].usageCount < 1 {
 		delete(s.entries, session)
 	}
 	return

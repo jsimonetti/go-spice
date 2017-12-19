@@ -1,22 +1,17 @@
 package spice
 
 import (
-	"errors"
-	"io"
-	"net"
-
+	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/x509"
-
-	"fmt"
-
-	"bytes"
 	"crypto/sha1"
-
-	"context"
-
+	"crypto/x509"
 	"encoding/binary"
+	"errors"
+	"fmt"
+	"io"
+	"net"
 
 	"github.com/jsimonetti/go-spice/red"
 )
