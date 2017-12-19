@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Pipe is the server object for this spice proxy.
+// Proxy is the server object for this spice proxy.
 type Proxy struct {
 	// WithAuthMethod can be provided to implement custom authentication
 	// By default, "auth-less" no-op mode is enabled.
@@ -28,7 +28,7 @@ type Proxy struct {
 	sessionTable *sessionTable
 }
 
-// New returns a new *Pipe with the options applied
+// New returns a new *Proxy with the options applied
 func New(options ...Option) (*Proxy, error) {
 	proxy := &Proxy{}
 	proxy.authenticator = make(map[red.AuthMethod]Authenticator)
@@ -44,7 +44,7 @@ func New(options ...Option) (*Proxy, error) {
 	}
 
 	if proxy.log == nil {
-		proxy.log = logrus.New().WithField("app", "spiceProxy")
+		proxy.log = defaultLogger()
 	}
 
 	if proxy.dial == nil {
