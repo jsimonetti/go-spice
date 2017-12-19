@@ -2,6 +2,7 @@ package red
 
 import "encoding/binary"
 
+// MiniDataHeader is a header to a data packet
 type MiniDataHeader struct {
 	// MessageType is type of message
 	MessageType uint16

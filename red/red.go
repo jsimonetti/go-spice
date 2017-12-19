@@ -20,24 +20,34 @@ type SpicePacket interface {
 	finish()
 }
 
+// Magic is the spice RED protocol magic bytes
 var Magic = [4]uint8{0x52, 0x45, 0x44, 0x51}
 
 const (
+	// VersionMajor is the major version of the supported protocol
 	VersionMajor uint32 = 2
+	// VersionMinor is the minor version of the supported protocol
 	VersionMinor uint32 = 2
 )
 
 //go:generate stringer -type=AuthMethod
+
+// AuthMethod is the method used for authentication
 type AuthMethod uint32
 
 const (
+	// AuthMethodSpice is the spice token based authentication method
 	AuthMethodSpice AuthMethod = 1
-	AuthMethodSASL  AuthMethod = 2
+	// AuthMethodSASL is the SASL authentication method
+	AuthMethodSASL AuthMethod = 2
 )
 
 //go:generate stringer -type=ChannelType
+
+// ChannelType is the packet channel type
 type ChannelType uint8
 
+// Channel types
 const (
 	ChannelMain     ChannelType = 1
 	ChannelDisplay  ChannelType = 2
@@ -48,8 +58,11 @@ const (
 )
 
 //go:generate stringer -type=ErrorCode
+
+// ErrorCode return on error
 type ErrorCode uint32
 
+// Error codes
 const (
 	ErrorOk                  ErrorCode = 0
 	ErrorError               ErrorCode = 1
@@ -63,12 +76,18 @@ const (
 	ErrorChannelNotAvailable ErrorCode = 9
 )
 
+// TicketPubkeyBytes is the length of a ticket RSA public key
 const TicketPubkeyBytes = 162
+
+// ClientTicketBytes is the length of an encrypted Spice token
 const ClientTicketBytes = 128
 
 //go:generate stringer -type=Capability
+
+// Capability is the authentication capability
 type Capability uint8
 
+// Authentication capabilities
 const (
 	CapabilityAuthSpice Capability = 1
 	CapabilityAuthSASL  Capability = 2

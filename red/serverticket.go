@@ -2,13 +2,10 @@ package red
 
 import "encoding/binary"
 
+// ServerTicket is a spice packet send by the server in response to
+// a ClientTicket packet
 type ServerTicket struct {
 	Result ErrorCode
-}
-
-// NewServerTicket returns an ClientLinkMessage
-func NewServerTicket() SpicePacket {
-	return &ServerTicket{}
 }
 
 // MarshalBinary marshals a Packet into a byte slice.

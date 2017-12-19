@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 )
 
+// ServerLinkMessage is a spice packet send by the server in response to
+// a ClientLinkMessage
 type ServerLinkMessage struct {
 	// Error codes (i.e., RED_ERROR_?)
 	Error ErrorCode
@@ -26,11 +28,6 @@ type ServerLinkMessage struct {
 	// Capabilities hold the variable length capabilities
 	CommonCapabilities  []uint32
 	ChannelCapabilities []uint32
-}
-
-// NewServerLinkMessage returns an clientLinkMessage
-func NewServerLinkMessage() SpicePacket {
-	return &ServerLinkMessage{}
 }
 
 // MarshalBinary marshals a Packet into a byte slice.

@@ -5,14 +5,11 @@ import (
 	"encoding/binary"
 )
 
+// ClientTicket is a spice packet send by the client
+// that contains a ticket
 type ClientTicket struct {
 	// Ticket is the RSA encrypted ticket
 	Ticket [ClientTicketBytes]byte
-}
-
-// NewClientTicket returns an ClientLinkMessage
-func NewClientTicket() SpicePacket {
-	return &ClientTicket{}
 }
 
 // MarshalBinary marshals a Packet into a byte slice.

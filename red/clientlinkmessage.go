@@ -2,6 +2,8 @@ package red
 
 import "encoding/binary"
 
+// ClientLinkMessage is a spice packet send by the client
+// to start a connection.
 type ClientLinkMessage struct {
 	// SessionID In   case   of   a   new   session   (i.e.,   channel   type   is
 	// ChannelMain) this field is set to zero, and in response the server will
@@ -29,11 +31,6 @@ type ClientLinkMessage struct {
 	// Capabilities hold the variable length capabilities
 	CommonCapabilities  []uint32
 	ChannelCapabilities []uint32
-}
-
-// NewClientLinkMessage returns an clientLinkMessage
-func NewClientLinkMessage() SpicePacket {
-	return &ClientLinkMessage{}
 }
 
 // MarshalBinary marshals a Packet into a byte slice.

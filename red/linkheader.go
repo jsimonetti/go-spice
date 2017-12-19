@@ -2,12 +2,10 @@ package red
 
 import (
 	"bytes"
-
 	"encoding/binary"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
+// LinkHeader is a header to a client link message packet
 type LinkHeader struct {
 	// Magic must be equal to Magic
 	Magic [4]uint8
@@ -53,7 +51,6 @@ func (p *LinkHeader) UnmarshalBinary(b []byte) error {
 // validate is used to validate the Packet.
 func (p *LinkHeader) validate() error {
 	if !bytes.Equal(p.Magic[:], Magic[:]) {
-		spew.Dump(p.Magic[:], Magic[:])
 		return errInvalidPacket
 	}
 	if p.Major != VersionMajor || p.Minor != VersionMinor {

@@ -2,14 +2,11 @@ package red
 
 import "encoding/binary"
 
+// ClientAuthMethod is a spice packet send by the client
+// to select the authentication method.
 type ClientAuthMethod struct {
 	// Method is the authentication method selected by the client
 	Method AuthMethod
-}
-
-// NewClientAuthMethodSelect returns an ClientLinkMessage
-func NewClientAuthMethodSelect() SpicePacket {
-	return &ClientAuthMethod{}
 }
 
 // MarshalBinary marshals an Packet into a byte slice.
