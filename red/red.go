@@ -55,6 +55,7 @@ const (
 	ChannelCursor   ChannelType = 4
 	ChannelPlayback ChannelType = 5
 	ChannelRecord   ChannelType = 6
+	ChannelUSBRedir ChannelType = 9
 )
 
 //go:generate stringer -type=ErrorCode

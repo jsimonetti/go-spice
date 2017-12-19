@@ -1,7 +1,6 @@
 package spice
 
 import (
-	"bufio"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -10,6 +9,7 @@ import (
 	"net"
 
 	"github.com/jsimonetti/go-spice/red"
+	"github.com/sirupsen/logrus"
 )
 
 type tenantHandshake struct {
@@ -26,6 +26,8 @@ type tenantHandshake struct {
 
 	otp         string // one time password
 	destination string // compute computeAddress
+
+	log *logrus.Entry
 }
 
 func (c *tenantHandshake) Done() bool {
@@ -33,17 +35,16 @@ func (c *tenantHandshake) Done() bool {
 }
 
 func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
-	bufConn := bufio.NewReader(tenant)
-
 	// Handle first Tenant Link Message
-	if err := c.clientLinkMessage(bufConn, tenant); err != nil {
+	if err := c.clientLinkMessage(tenant); err != nil {
 		return nil, err
 	}
 
 	c.otp = c.proxy.sessionTable.OTP(c.sessionID)
+	c.destination = c.proxy.sessionTable.Compute(c.sessionID)
 
 	// Handle 2nd Tenant auth method select
-	if err := c.clientAuthMethod(bufConn, tenant); err != nil {
+	if err := c.clientAuthMethod(tenant); err != nil {
 		return nil, err
 	}
 
@@ -54,6 +55,7 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 		channelID:   c.channelID,
 		sessionID:   c.sessionID,
 		tenant:      tenant,
+		log:         c.log,
 	}
 
 	// Lookup destination in proxy.sessionTable
@@ -65,12 +67,16 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 		}
 	}
 
+	handShake.log = c.log.WithField("compute", c.destination)
+
 	for !handShake.Done() {
 		if err := handShake.clientLinkStage(c.destination); err != nil {
-			c.proxy.log.WithError(err).Error("compute handshake error")
+			handShake.log.WithError(err).Error("compute handshake error")
 			return nil, err
 		}
 	}
+
+	c.log = handShake.log
 
 	c.sessionID = handShake.sessionID
 	c.proxy.sessionTable.Add(c.sessionID, c.destination, c.otp)
@@ -79,14 +85,16 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 	return handShake.compute, nil
 }
 
-func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
+func (c *tenantHandshake) clientAuthMethod(tenant net.Conn) error {
 	var err error
 	b := make([]byte, 4)
 
-	if _, err = in.Read(b); err != nil {
-		c.proxy.log.WithError(err).Error("error reading client AuthMethod")
+	if _, err = tenant.Read(b); err != nil {
+		c.log.WithError(err).Error("error reading client AuthMethod")
 		return err
 	}
+
+	c.log.Debug("received ClientAuthMethod")
 
 	c.tenantAuthMethod = red.AuthMethod(b[0])
 
@@ -94,17 +102,20 @@ func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
 	var ok bool
 
 	if auth, ok = c.proxy.authenticator[c.tenantAuthMethod]; !ok {
-		if err := sendServerTicket(red.ErrorPermissionDenied, conn); err != nil {
-			c.proxy.log.WithError(err).Warn("send ticket")
+		if err := sendServerTicket(red.ErrorPermissionDenied, tenant); err != nil {
+			c.log.WithError(err).Warn("send ticket")
 		}
 		return fmt.Errorf("unavailable auth method %s", c.tenantAuthMethod)
 	}
 
-	authCtx := &authSpiceContext{tenant: conn, privateKey: c.privateKey, token: c.otp, computeAddress: c.destination}
+	c.log = c.log.WithField("authmethod", c.tenantAuthMethod)
+	c.log.Debug("starting authentication")
+
+	authCtx := &authSpiceContext{tenant: tenant, privateKey: c.privateKey, token: c.otp, computeAddress: c.destination}
 
 	result, destination, err := auth.Next(authCtx)
 	if err != nil {
-		c.proxy.log.WithError(err).Error("authentication error")
+		c.log.WithError(err).Error("authentication error")
 		return err
 	}
 
@@ -112,24 +123,26 @@ func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
 	c.destination = destination
 
 	if !result {
-		if err := sendServerTicket(red.ErrorPermissionDenied, conn); err != nil {
-			c.proxy.log.WithError(err).Warn("send ticket")
+		if err := sendServerTicket(red.ErrorPermissionDenied, tenant); err != nil {
+			c.log.WithError(err).Warn("send ticket")
 			return err
 		}
 		return fmt.Errorf("authentication failed")
 	}
 
-	return sendServerTicket(red.ErrorOk, conn)
+	return sendServerTicket(red.ErrorOk, tenant)
 }
 
-func (c *tenantHandshake) clientLinkMessage(in io.Reader, out io.Writer) error {
+func (c *tenantHandshake) clientLinkMessage(tenant io.ReadWriter) error {
 	var err error
 	var b []byte
 
-	if b, err = readLinkPacket(in); err != nil {
-		c.proxy.log.WithError(err).Error("error reading link packet")
+	if b, err = readLinkPacket(tenant); err != nil {
+		c.log.WithError(err).Error("error reading link packet")
 		return err
 	}
+
+	c.log.Debug("received ClientLinkMessage")
 
 	linkMessage := &red.ClientLinkMessage{}
 	if err := linkMessage.UnmarshalBinary(b); err != nil {
@@ -140,7 +153,9 @@ func (c *tenantHandshake) clientLinkMessage(in io.Reader, out io.Writer) error {
 	c.channelID = linkMessage.ChannelID
 	c.sessionID = linkMessage.SessionID
 
-	return c.sendServerLinkMessage(out)
+	c.log = c.log.WithFields(logrus.Fields{"channel": c.channelID, "type": c.channelType, "session": c.sessionID})
+
+	return c.sendServerLinkMessage(tenant)
 }
 
 func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
@@ -190,7 +205,7 @@ func (c *tenantHandshake) getPubkey() (ret [red.TicketPubkeyBytes]byte, err erro
 
 	cert, err := x509.MarshalPKIXPublicKey(key.Public())
 	if err != nil {
-		c.proxy.log.WithError(err).Error("rsa key parse error")
+		c.log.WithError(err).Error("rsa key parse error")
 		return ret, err
 	}
 

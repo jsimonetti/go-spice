@@ -51,9 +51,7 @@ func New(options ...Option) (*Proxy, error) {
 		proxy.dial = defaultDialer()
 	}
 
-	table := &sessionTable{}
-	table.entries = make(map[uint32]*sessionEntry)
-	proxy.sessionTable = table
+	proxy.sessionTable = newSessionTable()
 
 	return proxy, nil
 }
@@ -64,6 +62,7 @@ func (p *Proxy) ListenAndServe(network, addr string) error {
 	if err != nil {
 		return err
 	}
+	p.log.Debugf("listening on %s", l.Addr().String())
 	return p.Serve(l)
 }
 
@@ -74,6 +73,7 @@ func (p *Proxy) Serve(l net.Listener) error {
 		if err != nil {
 			return err
 		}
+		p.log.WithField("tenant", tenant.RemoteAddr().String()).Debug("accepted connection")
 		go p.ServeConn(tenant)
 	}
 }
@@ -84,26 +84,28 @@ func (p *Proxy) ServeConn(tenant net.Conn) error {
 
 	handShake := &tenantHandshake{
 		proxy: p,
+		log:   p.log.WithField("tenant", tenant.RemoteAddr().String()),
 	}
 
 	var compute net.Conn
 	var err error
 
+	handShake.log.Debug("starting handshake")
 	for !handShake.Done() {
 		if compute, err = handShake.clientLinkStage(tenant); err != nil {
-			p.log.WithError(err).Info("handshake failed")
+			handShake.log.WithError(err).Info("handshake failed")
 			return err
 		}
 	}
 
-	p.log.WithFields(logrus.Fields{"sessionid": handShake.sessionID, "tenant": tenant.RemoteAddr(), "compute": compute.LocalAddr()}).Info("connection established")
+	handShake.log.Info("connection established")
 
 	flow := newFlow(tenant, compute)
 	if err := flow.Pipe(); err != nil {
-		p.log.WithError(err).WithFields(logrus.Fields{"sessionid": handShake.sessionID, "tenant": tenant.RemoteAddr(), "compute": compute.LocalAddr()}).Error("close error")
+		handShake.log.WithError(err).Error("close error")
 	}
 
-	p.log.WithFields(logrus.Fields{"sessionid": handShake.sessionID, "tenant": tenant.RemoteAddr(), "compute": compute.LocalAddr()}).Info("connection closed")
+	handShake.log.Info("connection closed")
 	p.sessionTable.Disconnect(handShake.sessionID)
 
 	return nil

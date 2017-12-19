@@ -6,10 +6,10 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"net"
-
-	"fmt"
+	"time"
 
 	"github.com/jsimonetti/go-spice/red"
+	"github.com/pkg/errors"
 )
 
 // Authenticator is the interface used for creating a tenant authentication
@@ -53,7 +53,7 @@ func (a *noopAuth) Next(ctx AuthContext) (bool, string, error) {
 	var c AuthSpiceContext
 	var ok bool
 	if c, ok = ctx.(AuthSpiceContext); !ok {
-		return false, "", fmt.Errorf("invalid auth method")
+		return false, "", errors.New("invalid auth method")
 	}
 
 	c.(*authSpiceContext).readTicket()
@@ -86,7 +86,7 @@ type AuthSASLContext interface {
 
 // AuthSpiceContext is the interface for token based (Spice) authentication.
 type AuthSpiceContext interface {
-	Token() string
+	Token() (string, error)
 	AuthContext
 }
 
@@ -104,37 +104,41 @@ type authSpiceContext struct {
 }
 
 // readTicket is a helper function to read the tenant ticket bytes
-func (a *authSpiceContext) readTicket() []byte {
+func (a *authSpiceContext) readTicket() ([]byte, error) {
 	if a.ticketCrypted != nil {
-		return a.ticketCrypted
+		return a.ticketCrypted, nil
 	}
 	a.ticketCrypted = make([]byte, 128)
+	a.tenant.SetReadDeadline(time.Now().Add(5 * time.Second))
 	if _, err := a.tenant.Read(a.ticketCrypted); err != nil {
-		return nil
+		return nil, errors.Wrap(err, "read deadline reached")
 	}
-	return a.ticketCrypted
+	a.tenant.SetReadDeadline(time.Time{})
+	return a.ticketCrypted, nil
 }
 
 // Token will return the unencrypted token string the tenant used
 // to authenticate this session after trimming trailing zero's.
-func (a *authSpiceContext) Token() string {
-	crypted := a.readTicket()
-
+func (a *authSpiceContext) Token() (string, error) {
+	crypted, err := a.readTicket()
+	if err != nil {
+		return "", err
+	}
 	key := a.privateKey
 	if key == nil {
-		return ""
+		return "", errors.New("no private key")
 	}
 
 	rng := rand.Reader
 	plaintext, err := rsa.DecryptOAEP(sha1.New(), rng, key, crypted, []byte{})
 	if err != nil {
-		return ""
+		return "", errors.New("could not decrypt token")
 	}
 
 	// trim trailing nul
 	a.ticketUncrypted = bytes.Trim(plaintext, "\x00")
 
-	return string(a.ticketUncrypted)
+	return string(a.ticketUncrypted), nil
 }
 
 // SavedToken return the token saved to this session.

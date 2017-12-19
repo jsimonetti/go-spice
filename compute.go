@@ -14,6 +14,7 @@ import (
 	"net"
 
 	"github.com/jsimonetti/go-spice/red"
+	"github.com/sirupsen/logrus"
 )
 
 func readMiniHeaderPacket(conn io.Reader) (uint16, []byte, error) {
@@ -58,6 +59,7 @@ type computeHandshake struct {
 	sessionID   uint32
 
 	computePubKey [red.TicketPubkeyBytes]byte
+	log           *logrus.Entry
 }
 
 func (c *computeHandshake) Done() bool {
@@ -69,7 +71,7 @@ func (c *computeHandshake) clientLinkStage(destination string) error {
 
 	c.compute, err = c.proxy.dial(context.Background(), "tcp", destination)
 	if err != nil {
-		c.proxy.log.WithError(err).Error("dial compute error")
+		c.log.WithError(err).Error("dial compute error")
 		return err
 	}
 
@@ -105,20 +107,20 @@ func (c *computeHandshake) readServerInit(in io.Reader, out io.Writer) error {
 	var err error
 
 	if mType, b, err = readMiniHeaderPacket(in); err != nil {
-		c.proxy.log.WithError(err).Error("read server Init")
+		c.log.WithError(err).Error("read server Init")
 		return err
 	}
 
 	if mType != 103 { // Server INIT
 		err := errors.New("expected server INIT")
-		c.proxy.log.WithError(err).Error("read server INIT")
+		c.log.WithError(err).Error("read server INIT")
 		return err
 	}
 
 	c.sessionID = binary.LittleEndian.Uint32(b[6:10])
 
 	if _, err := out.Write(b); err != nil {
-		c.proxy.log.WithError(err).Error("write server Init")
+		c.log.WithError(err).Error("write server Init")
 		return err
 	}
 
@@ -135,14 +137,14 @@ func (c *computeHandshake) clientTicket(in io.Reader, out io.Writer) error {
 
 	key, err := x509.ParsePKIXPublicKey(c.computePubKey[:])
 	if err != nil {
-		c.proxy.log.WithError(err).Error("Error parsing public key")
+		c.log.WithError(err).Error("Error parsing public key")
 		return err
 	}
 	pubkey := key.(*rsa.PublicKey)
 
 	ciphertext, err := rsa.EncryptOAEP(sha1.New(), rng, pubkey, password, []byte{})
 	if err != nil {
-		c.proxy.log.WithError(err).Error("Error from encryption")
+		c.log.WithError(err).Error("Error from encryption")
 		return err
 	}
 
@@ -155,25 +157,25 @@ func (c *computeHandshake) clientTicket(in io.Reader, out io.Writer) error {
 
 	mb, err := myTicket.MarshalBinary()
 	if err != nil {
-		c.proxy.log.WithError(err).Error("Error from marshalling ticket")
+		c.log.WithError(err).Error("Error from marshalling ticket")
 		return err
 	}
 	_, err = out.Write(mb)
 	if err != nil {
-		c.proxy.log.WithError(err).Error("write ticket to compute error")
+		c.log.WithError(err).Error("write ticket to compute error")
 		return err
 	}
 
 	srvTicket := make([]byte, 4)
 	_, err = in.Read(srvTicket)
 	if err != nil {
-		c.proxy.log.WithError(err).Error("compute ticket read error")
+		c.log.WithError(err).Error("compute ticket read error")
 		return err
 	}
 
 	if !bytes.Equal(srvTicket[:], []byte{0x00, 0x00, 0x00, 0x00}) {
 		err := fmt.Errorf("compute ticket error %#v", srvTicket)
-		c.proxy.log.WithError(err).Error("compute ticket error")
+		c.log.WithError(err).Error("compute ticket error")
 		return err
 	}
 
@@ -191,7 +193,7 @@ func (c *computeHandshake) clientAuthMethod(in io.Reader, out io.Writer) error {
 	}
 
 	if _, err = out.Write(mb); err != nil {
-		c.proxy.log.WithError(err).Error("write link message to compute error")
+		c.log.WithError(err).Error("write link message to compute error")
 		return err
 	}
 
@@ -225,23 +227,23 @@ func (c *computeHandshake) clientLinkMessage(in io.Reader, out io.Writer) error 
 	data := append(b2, mb...)
 
 	if _, err = out.Write(data); err != nil {
-		c.proxy.log.WithError(err).Error("write link message to compute error")
+		c.log.WithError(err).Error("write link message to compute error")
 		return err
 	}
 
 	var srvLmb []byte
 	if srvLmb, err = readLinkPacket(in); err != nil {
-		c.proxy.log.WithError(err).Error("compute read serverLinkMessage error")
+		c.log.WithError(err).Error("compute read serverLinkMessage error")
 	}
 
 	srvLm := &red.ServerLinkMessage{}
 	if err := srvLm.UnmarshalBinary(srvLmb); err != nil {
-		c.proxy.log.WithError(err).Error("serverlink unmarshal error")
+		c.log.WithError(err).Error("serverlink unmarshal error")
 		return err
 	}
 	if srvLm.Error != red.ErrorOk {
 		err := fmt.Errorf("server connection error %#v", srvLm.Error)
-		c.proxy.log.WithError(err).Error("server connection error")
+		c.log.WithError(err).Error("server connection error")
 		return err
 	}
 
