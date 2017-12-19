@@ -108,7 +108,7 @@ func (a *authSpiceContext) readTicket() ([]byte, error) {
 	if a.ticketCrypted != nil {
 		return a.ticketCrypted, nil
 	}
-	a.ticketCrypted = make([]byte, 128)
+	a.ticketCrypted = make([]byte, red.ClientTicketBytes)
 	a.tenant.SetReadDeadline(time.Now().Add(5 * time.Second))
 	if _, err := a.tenant.Read(a.ticketCrypted); err != nil {
 		return nil, errors.Wrap(err, "read deadline reached")
