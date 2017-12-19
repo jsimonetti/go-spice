@@ -42,14 +42,14 @@ type Authenticator interface {
 	Init() error
 }
 
-var _ Authenticator = &NOOPAuth{}
+var _ Authenticator = &noopAuth{}
 
-// NOOPAuth is a default no-op Authenticator that returns a static compute entry and is always
+// noopAuth is a default no-op Authenticator that returns a static compute entry and is always
 // successful.
-type NOOPAuth struct{}
+type noopAuth struct{}
 
 // Next implements the Authenticator interface
-func (a *NOOPAuth) Next(ctx AuthContext) (bool, string, error) {
+func (a *noopAuth) Next(ctx AuthContext) (bool, string, error) {
 	var c AuthSpiceContext
 	var ok bool
 	if c, ok = ctx.(AuthSpiceContext); !ok {
@@ -61,12 +61,12 @@ func (a *NOOPAuth) Next(ctx AuthContext) (bool, string, error) {
 }
 
 // Method implements the Authenticator interface
-func (a *NOOPAuth) Method() red.AuthMethod {
+func (a *noopAuth) Method() red.AuthMethod {
 	return red.AuthMethodSpice
 }
 
 // Init implements the Authenticator interface
-func (a *NOOPAuth) Init() error { return nil }
+func (a *noopAuth) Init() error { return nil }
 
 // AuthContext is used to pass either a spiceAuthContext or a saslAuthContext
 // to the Authenticator

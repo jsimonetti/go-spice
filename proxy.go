@@ -40,7 +40,7 @@ func New(options ...Option) (*Proxy, error) {
 	}
 
 	if len(proxy.authenticator) < 1 {
-		proxy.authenticator[red.AuthMethodSpice] = &NOOPAuth{}
+		proxy.authenticator[red.AuthMethodSpice] = &noopAuth{}
 	}
 
 	if proxy.log == nil {
