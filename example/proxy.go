@@ -10,15 +10,16 @@ import (
 
 func main() {
 	// create a new logger to be used for the proxy and the authenticator
-	log := logrus.New().WithField("component", "proxy")
+	log := logrus.New()
+	log.SetLevel(logrus.DebugLevel)
 
 	// create a new instance of the sample authenticator
 	authSpice := &AuthSpice{
-		log: log,
+		log: log.WithField("component", "authenticator"),
 	}
 
 	// create the proxy using the logger and authenticator
-	proxy, err := spice.New(spice.WithLogger(log), spice.WithAuthenticator(authSpice))
+	proxy, err := spice.New(spice.WithLogger(log.WithField("component", "proxy")), spice.WithAuthenticator(authSpice))
 	if err != nil {
 		log.Fatalf("error: %s", err)
 	}
@@ -42,7 +43,10 @@ func (a *AuthSpice) Next(c spice.AuthContext) (bool, string, error) {
 	}
 
 	// retrieve the token sent by the tenant
-	token := ctx.Token()
+	token, err := ctx.Token()
+	if err != nil {
+		return false, "", err
+	}
 
 	// is the previously saved token is set and matches the token sent by the tenant
 	// we return the previously saved compute address
@@ -53,7 +57,7 @@ func (a *AuthSpice) Next(c spice.AuthContext) (bool, string, error) {
 
 	// find the compute node for this token
 	if destination, ok := a.resolveComputeAddress(token); ok {
-		a.log.Debug("Ticket validated, compute node at %s", destination)
+		a.log.Debugf("Ticket validated, compute node at %s", destination)
 		// save the token and compute address into the context
 		// so it can be saved into the session table by the proxy
 		ctx.SaveToken(token)
