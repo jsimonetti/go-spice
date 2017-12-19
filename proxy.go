@@ -11,7 +11,7 @@ import (
 
 // Proxy is the server object for this spice proxy.
 type Proxy struct {
-	// WithAuthMethod can be provided to implement custom authentication
+	// WithAuthenticator can be provided to implement custom authentication
 	// By default, "auth-less" no-op mode is enabled.
 	authenticator map[red.AuthMethod]Authenticator
 

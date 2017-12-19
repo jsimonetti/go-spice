@@ -24,7 +24,7 @@ func WithLogger(log *logrus.Entry) Option {
 	}
 }
 
-// WithAuthMethod can be provided to implement custom authentication
+// WithAuthenticator can be provided to implement custom authentication
 // By default, "auth-less" no-op mode is enabled.
 func WithAuthenticator(a Authenticator) Option {
 	return func(p *Proxy) error {
