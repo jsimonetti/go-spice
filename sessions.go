@@ -18,6 +18,12 @@ type sessionEntry struct {
 	authToken      string
 }
 
+func newSessionTable() *sessionTable {
+	return &sessionTable{
+		entries: make(map[uint32]*sessionEntry),
+	}
+}
+
 func (s *sessionTable) Lookup(session uint32) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -30,6 +36,15 @@ func (s *sessionTable) OTP(session uint32) string {
 	defer s.lock.Unlock()
 	if _, ok := s.entries[session]; ok {
 		return s.entries[session].authToken
+	}
+	return ""
+}
+
+func (s *sessionTable) Compute(session uint32) string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if _, ok := s.entries[session]; ok {
+		return s.entries[session].computeAddress
 	}
 	return ""
 }
