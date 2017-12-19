@@ -49,13 +49,16 @@ type ChannelType uint8
 
 // Channel types
 const (
-	ChannelMain     ChannelType = 1
-	ChannelDisplay  ChannelType = 2
-	ChannelInputs   ChannelType = 3
-	ChannelCursor   ChannelType = 4
-	ChannelPlayback ChannelType = 5
-	ChannelRecord   ChannelType = 6
-	ChannelUSBRedir ChannelType = 9
+	ChannelMain      ChannelType = 1
+	ChannelDisplay   ChannelType = 2
+	ChannelInputs    ChannelType = 3
+	ChannelCursor    ChannelType = 4
+	ChannelPlayback  ChannelType = 5
+	ChannelRecord    ChannelType = 6
+	ChannelTunnel    ChannelType = 7
+	ChannelSmartcard ChannelType = 8
+	ChannelUSBRedir  ChannelType = 9
+	ChannelPort      ChannelType = 10
 )
 
 //go:generate stringer -type=ErrorCode

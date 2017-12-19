@@ -4,24 +4,14 @@ package red
 
 import "fmt"
 
-const (
-	_ChannelType_name_0 = "ChannelMainChannelDisplayChannelInputsChannelCursorChannelPlaybackChannelRecord"
-	_ChannelType_name_1 = "ChannelUSBRedir"
-)
+const _ChannelType_name = "ChannelMainChannelDisplayChannelInputsChannelCursorChannelPlaybackChannelRecordChannelTunnelChannelSmartcardChannelUSBRedirChannelPort"
 
-var (
-	_ChannelType_index_0 = [...]uint8{0, 11, 25, 38, 51, 66, 79}
-	_ChannelType_index_1 = [...]uint8{0, 15}
-)
+var _ChannelType_index = [...]uint8{0, 11, 25, 38, 51, 66, 79, 92, 108, 123, 134}
 
 func (i ChannelType) String() string {
-	switch {
-	case 1 <= i && i <= 6:
-		i -= 1
-		return _ChannelType_name_0[_ChannelType_index_0[i]:_ChannelType_index_0[i+1]]
-	case i == 9:
-		return _ChannelType_name_1
-	default:
-		return fmt.Sprintf("ChannelType(%d)", i)
+	i -= 1
+	if i >= ChannelType(len(_ChannelType_index)-1) {
+		return fmt.Sprintf("ChannelType(%d)", i+1)
 	}
+	return _ChannelType_name[_ChannelType_index[i]:_ChannelType_index[i+1]]
 }
