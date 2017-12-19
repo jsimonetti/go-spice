@@ -119,11 +119,7 @@ func (c *tenantHandshake) clientAuthMethod(in io.Reader, conn net.Conn) error {
 		return fmt.Errorf("authentication failed")
 	}
 
-	if err := sendServerTicket(red.ErrorOk, conn); err != nil {
-		return err
-	}
-
-	return nil
+	return sendServerTicket(red.ErrorOk, conn)
 }
 
 func (c *tenantHandshake) clientLinkMessage(in io.Reader, out io.Writer) error {
@@ -144,11 +140,7 @@ func (c *tenantHandshake) clientLinkMessage(in io.Reader, out io.Writer) error {
 	c.channelID = linkMessage.ChannelID
 	c.sessionID = linkMessage.SessionID
 
-	if err := c.sendServerLinkMessage(out); err != nil {
-		return err
-	}
-
-	return nil
+	return c.sendServerLinkMessage(out)
 }
 
 func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
