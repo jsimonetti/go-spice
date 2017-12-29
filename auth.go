@@ -71,9 +71,9 @@ func (a *noopAuth) Init() error { return nil }
 // AuthContext is used to pass either a spiceAuthContext or a saslAuthContext
 // to the Authenticator
 type AuthContext interface {
-	SavedToken() string
+	LoadToken() string
 	SaveToken(string)
-	SavedAddress() string
+	LoadAddress() string
 	SaveAddress(string)
 }
 
@@ -141,7 +141,7 @@ func (a *authSpiceContext) Token() (string, error) {
 	return string(a.ticketUncrypted), nil
 }
 
-// SavedToken return the token saved to this session.
+// LoadToken return the token saved to this session.
 // If this connection belongs to a previously established session
 // (any channel after the first), this returns the token that was stored
 // in the session table when authenticating the first connection.
@@ -149,24 +149,24 @@ func (a *authSpiceContext) Token() (string, error) {
 // connections belonging to the same session to be validated.
 // The exact method of validation is up to the implementor of an Authenticator.
 // See the example on how to use this.
-func (a *authSpiceContext) SavedToken() string {
+func (a *authSpiceContext) LoadToken() string {
 	return a.token
 }
 
 // SaveToken stores a token in the context. When the result of the authentication
 // is true (access is granted) this token is saved in the session table. Any subsequent
 // connections using the same session id, will have this token available in its auth,
-// and can be retrieved using SavedToken().
+// and can be retrieved using LoadToken().
 // See the example on how to use this.
 func (a *authSpiceContext) SaveToken(token string) {
 	a.token = token
 }
 
-// SavedAddress returns the compute node computeAddress saved to this session.
-// This is the same for SavedToken, only it is used to store the compute node computeAddress
+// LoadAddress returns the compute node computeAddress saved to this session.
+// This is the same for LoadToken, only it is used to store the compute node computeAddress
 // for this session.
 // See the example on how to use this.
-func (a *authSpiceContext) SavedAddress() string {
+func (a *authSpiceContext) LoadAddress() string {
 	return a.computeAddress
 }
 
