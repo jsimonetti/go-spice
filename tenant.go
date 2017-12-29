@@ -8,6 +8,8 @@ import (
 	"io"
 	"net"
 
+	"errors"
+
 	"github.com/jsimonetti/go-spice/red"
 	"github.com/sirupsen/logrus"
 )
@@ -111,7 +113,15 @@ func (c *tenantHandshake) clientAuthMethod(tenant net.Conn) error {
 	c.log = c.log.WithField("authmethod", c.tenantAuthMethod)
 	c.log.Debug("starting authentication")
 
-	authCtx := &authSpiceContext{tenant: tenant, privateKey: c.privateKey, token: c.otp, computeAddress: c.destination}
+	var authCtx AuthContext
+	switch c.tenantAuthMethod {
+	case red.AuthMethodSpice:
+		authCtx = &authSpiceContext{tenant: tenant, privateKey: c.privateKey, token: c.otp, computeAddress: c.destination}
+	case red.AuthMethodSASL:
+		return errors.New("SASL is not a supported authmethod")
+	default:
+		return errors.New("unsupported authmethod")
+	}
 
 	result, destination, err := auth.Next(authCtx)
 	if err != nil {
@@ -119,7 +129,7 @@ func (c *tenantHandshake) clientAuthMethod(tenant net.Conn) error {
 		return err
 	}
 
-	c.otp = authCtx.token
+	c.otp = authCtx.LoadToken()
 	c.destination = destination
 
 	if !result {
