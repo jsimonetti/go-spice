@@ -50,9 +50,9 @@ func (a *AuthSpice) Next(c spice.AuthContext) (bool, string, error) {
 
 	// is the previously saved token is set and matches the token sent by the tenant
 	// we return the previously saved compute address
-	if ctx.SavedToken() != "" && ctx.SavedToken() == token {
-		a.log.Debug("SavedToken found and matches password")
-		return true, ctx.SavedAddress(), nil
+	if ctx.LoadToken() != "" && ctx.LoadToken() == token {
+		a.log.Debug("LoadToken found and matches password")
+		return true, ctx.LoadAddress(), nil
 	}
 
 	// find the compute node for this token
@@ -62,7 +62,7 @@ func (a *AuthSpice) Next(c spice.AuthContext) (bool, string, error) {
 		// so it can be saved into the session table by the proxy
 		ctx.SaveToken(token)
 		ctx.SaveAddress(destination)
-		return true, ctx.SavedAddress(), nil
+		return true, ctx.LoadAddress(), nil
 	}
 
 	a.log.Warn("authentication failed")
