@@ -56,7 +56,7 @@ func (a *noopAuth) Next(ctx AuthContext) (bool, string, error) {
 		return false, "", errors.New("invalid auth method")
 	}
 
-	c.(*authSpiceContext).readTicket()
+	c.(*authSpice).readTicket()
 	return true, "127.0.0.1:5900", nil
 }
 
@@ -90,10 +90,10 @@ type AuthSpiceContext interface {
 	AuthContext
 }
 
-// authSpiceContext is a special context for the Authenticator
+// authSpice is a special context for the Authenticator
 // Is is used to pass information from the proxy to the Authenticator and
 // back again.
-type authSpiceContext struct {
+type authSpice struct {
 	tenant          net.Conn
 	ticketCrypted   []byte
 	ticketUncrypted []byte
@@ -104,7 +104,7 @@ type authSpiceContext struct {
 }
 
 // readTicket is a helper function to read the tenant ticket bytes
-func (a *authSpiceContext) readTicket() ([]byte, error) {
+func (a *authSpice) readTicket() ([]byte, error) {
 	if a.ticketCrypted != nil {
 		return a.ticketCrypted, nil
 	}
@@ -119,7 +119,7 @@ func (a *authSpiceContext) readTicket() ([]byte, error) {
 
 // Token will return the unencrypted token string the tenant used
 // to authenticate this session after trimming trailing zero's.
-func (a *authSpiceContext) Token() (string, error) {
+func (a *authSpice) Token() (string, error) {
 	crypted, err := a.readTicket()
 	if err != nil {
 		return "", err
@@ -149,7 +149,7 @@ func (a *authSpiceContext) Token() (string, error) {
 // connections belonging to the same session to be validated.
 // The exact method of validation is up to the implementor of an Authenticator.
 // See the example on how to use this.
-func (a *authSpiceContext) LoadToken() string {
+func (a *authSpice) LoadToken() string {
 	return a.token
 }
 
@@ -158,7 +158,7 @@ func (a *authSpiceContext) LoadToken() string {
 // connections using the same session id, will have this token available in its auth,
 // and can be retrieved using LoadToken().
 // See the example on how to use this.
-func (a *authSpiceContext) SaveToken(token string) {
+func (a *authSpice) SaveToken(token string) {
 	a.token = token
 }
 
@@ -166,13 +166,13 @@ func (a *authSpiceContext) SaveToken(token string) {
 // This is the same for LoadToken, only it is used to store the compute node computeAddress
 // for this session.
 // See the example on how to use this.
-func (a *authSpiceContext) LoadAddress() string {
+func (a *authSpice) LoadAddress() string {
 	return a.computeAddress
 }
 
 // SaveAddress saves the compute node computeAddress in the context. When the result of the authentication
 // is true (access is granted) this computeAddress is saved in the session table.
 // See the example on how to use this.
-func (a *authSpiceContext) SaveAddress(address string) {
+func (a *authSpice) SaveAddress(address string) {
 	a.computeAddress = address
 }

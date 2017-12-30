@@ -116,7 +116,7 @@ func (c *tenantHandshake) clientAuthMethod(tenant net.Conn) error {
 	var authCtx AuthContext
 	switch c.tenantAuthMethod {
 	case red.AuthMethodSpice:
-		authCtx = &authSpiceContext{tenant: tenant, privateKey: c.privateKey, token: c.otp, computeAddress: c.destination}
+		authCtx = &authSpice{tenant: tenant, privateKey: c.privateKey, token: c.otp, computeAddress: c.destination}
 	case red.AuthMethodSASL:
 		return errors.New("SASL is not a supported authmethod")
 	default:
