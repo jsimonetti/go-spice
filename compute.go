@@ -58,7 +58,7 @@ type computeHandshake struct {
 	channelType red.ChannelType
 	sessionID   uint32
 
-	computePubKey [red.TicketPubkeyBytes]byte
+	computePubKey red.PubKey
 	log           *logrus.Entry
 }
 

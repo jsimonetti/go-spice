@@ -10,6 +10,8 @@ import (
 
 	"errors"
 
+	"crypto"
+
 	"github.com/jsimonetti/go-spice/red"
 	"github.com/sirupsen/logrus"
 )
@@ -182,11 +184,21 @@ func (c *tenantHandshake) clientLinkMessage(tenant io.ReadWriter) error {
 
 	c.log = c.log.WithFields(logrus.Fields{"channel": c.channelID, "type": c.channelType, "session": c.sessionID})
 
-	return c.sendServerLinkMessage(tenant)
+	return sendServerLinkPacket(tenant, c.privateKey.Public())
 }
 
-func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
-	pubkey, err := c.getPubkey()
+func redPubKey(key crypto.PublicKey) (ret red.PubKey, err error) {
+	cert, err := x509.MarshalPKIXPublicKey(key)
+	if err != nil {
+		return ret, err
+	}
+
+	copy(ret[:], cert[:])
+	return ret, nil
+}
+
+func sendServerLinkPacket(wr io.Writer, key crypto.PublicKey) error {
+	pubkey, err := redPubKey(key)
 	if err != nil {
 		return err
 	}
@@ -216,23 +228,12 @@ func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
 
 	data := append(b2, b...)
 
-	_, err = writer.Write(data)
+	_, err = wr.Write(data)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (c *tenantHandshake) getPubkey() (ret [red.TicketPubkeyBytes]byte, err error) {
-	cert, err := x509.MarshalPKIXPublicKey(c.privateKey.Public())
-	if err != nil {
-		c.log.WithError(err).Error("rsa key parse error")
-		return ret, err
-	}
-
-	copy(ret[:], cert[:])
-	return ret, nil
 }
 
 func readLinkPacket(conn io.Reader) ([]byte, error) {

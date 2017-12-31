@@ -96,3 +96,6 @@ const (
 	CapabilityAuthSpice Capability = 1
 	CapabilityAuthSASL  Capability = 2
 )
+
+// PubKey is a red ticket public key
+type PubKey [TicketPubkeyBytes]byte
