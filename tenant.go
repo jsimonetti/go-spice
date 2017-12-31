@@ -208,6 +208,7 @@ func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
 	header := red.LinkHeader{
 		Size: reply.CapsOffset + 8,
 	}
+
 	b2, err := header.MarshalBinary()
 	if err != nil {
 		return err
