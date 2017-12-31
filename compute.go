@@ -76,17 +76,17 @@ func (c *computeHandshake) clientLinkStage(destination string) error {
 	}
 
 	// handle send client LinkMessage
-	if err := c.clientLinkMessage(c.compute, c.compute); err != nil {
+	if err := c.clientLinkMessage(c.compute); err != nil {
 		return err
 	}
 
 	// handle send auth method
-	if err := c.clientAuthMethod(c.compute, c.compute); err != nil {
+	if err := c.clientAuthMethod(c.compute); err != nil {
 		return err
 	}
 
 	// Handle 3rd Client Ticket
-	if err := c.clientTicket(c.compute, c.compute); err != nil {
+	if err := c.clientTicket(c.compute); err != nil {
 		return err
 	}
 
@@ -127,7 +127,7 @@ func (c *computeHandshake) readServerInit(in io.Reader, out io.Writer) error {
 	return nil
 }
 
-func (c *computeHandshake) clientTicket(in io.Reader, out io.Writer) error {
+func (c *computeHandshake) clientTicket(rw io.ReadWriter) error {
 
 	password := []byte{} // password for compute side
 
@@ -160,14 +160,14 @@ func (c *computeHandshake) clientTicket(in io.Reader, out io.Writer) error {
 		c.log.WithError(err).Error("Error from marshalling ticket")
 		return err
 	}
-	_, err = out.Write(mb)
+	_, err = rw.Write(mb)
 	if err != nil {
 		c.log.WithError(err).Error("write ticket to compute error")
 		return err
 	}
 
 	srvTicket := make([]byte, 4)
-	_, err = in.Read(srvTicket)
+	_, err = rw.Read(srvTicket)
 	if err != nil {
 		c.log.WithError(err).Error("compute ticket read error")
 		return err
@@ -182,7 +182,7 @@ func (c *computeHandshake) clientTicket(in io.Reader, out io.Writer) error {
 	return nil
 }
 
-func (c *computeHandshake) clientAuthMethod(in io.Reader, out io.Writer) error {
+func (c *computeHandshake) clientAuthMethod(wr io.Writer) error {
 	myAuthMethod := &red.ClientAuthMethod{
 		Method: red.AuthMethodSpice,
 	}
@@ -192,7 +192,7 @@ func (c *computeHandshake) clientAuthMethod(in io.Reader, out io.Writer) error {
 		return err
 	}
 
-	if _, err = out.Write(mb); err != nil {
+	if _, err = wr.Write(mb); err != nil {
 		c.log.WithError(err).Error("write link message to compute error")
 		return err
 	}
@@ -200,7 +200,7 @@ func (c *computeHandshake) clientAuthMethod(in io.Reader, out io.Writer) error {
 	return nil
 }
 
-func (c *computeHandshake) clientLinkMessage(in io.Reader, out io.Writer) error {
+func (c *computeHandshake) clientLinkMessage(rw io.ReadWriter) error {
 	myLink := &red.ClientLinkMessage{
 		ChannelID:           c.channelID,
 		ChannelType:         c.channelType,
@@ -226,13 +226,13 @@ func (c *computeHandshake) clientLinkMessage(in io.Reader, out io.Writer) error 
 
 	data := append(b2, mb...)
 
-	if _, err = out.Write(data); err != nil {
+	if _, err = rw.Write(data); err != nil {
 		c.log.WithError(err).Error("write link message to compute error")
 		return err
 	}
 
 	var srvLmb []byte
-	if srvLmb, err = readLinkPacket(in); err != nil {
+	if srvLmb, err = readLinkPacket(rw); err != nil {
 		c.log.WithError(err).Error("compute read serverLinkMessage error")
 	}
 

@@ -32,11 +32,28 @@ type tenantHandshake struct {
 	log *logrus.Entry
 }
 
+func newTenantHandshake(p *Proxy, log *logrus.Entry) (*tenantHandshake, error) {
+
+	handShake := &tenantHandshake{
+		proxy: p,
+		log:   log,
+	}
+
+	rng := rand.Reader
+	key, err := rsa.GenerateKey(rng, 1024)
+	if err != nil {
+		return nil, err
+	}
+	handShake.privateKey = key
+
+	return handShake, nil
+}
+
 func (c *tenantHandshake) Done() bool {
 	return c.done
 }
 
-func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
+func (c *tenantHandshake) clientLinkStage(tenant io.ReadWriter) (net.Conn, error) {
 	// Handle first Tenant Link Message
 	if err := c.clientLinkMessage(tenant); err != nil {
 		return nil, err
@@ -87,7 +104,7 @@ func (c *tenantHandshake) clientLinkStage(tenant net.Conn) (net.Conn, error) {
 	return handShake.compute, nil
 }
 
-func (c *tenantHandshake) clientAuthMethod(tenant net.Conn) error {
+func (c *tenantHandshake) clientAuthMethod(tenant io.ReadWriter) error {
 	var err error
 	b := make([]byte, 4)
 
@@ -182,6 +199,7 @@ func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
 		CommonCapabilities:  []uint32{0x0b},
 		ChannelCapabilities: []uint32{0x09},
 	}
+
 	b, err := reply.MarshalBinary()
 	if err != nil {
 		return err
@@ -206,14 +224,7 @@ func (c *tenantHandshake) sendServerLinkMessage(writer io.Writer) error {
 }
 
 func (c *tenantHandshake) getPubkey() (ret [red.TicketPubkeyBytes]byte, err error) {
-	rng := rand.Reader
-	key, err := rsa.GenerateKey(rng, 1024)
-	if err != nil {
-		return ret, err
-	}
-	c.privateKey = key
-
-	cert, err := x509.MarshalPKIXPublicKey(key.Public())
+	cert, err := x509.MarshalPKIXPublicKey(c.privateKey.Public())
 	if err != nil {
 		c.log.WithError(err).Error("rsa key parse error")
 		return ret, err

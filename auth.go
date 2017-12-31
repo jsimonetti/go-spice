@@ -5,8 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
-	"net"
 	"time"
+
+	"io"
+
+	"net"
 
 	"github.com/jsimonetti/go-spice/red"
 	"github.com/pkg/errors"
@@ -94,7 +97,7 @@ type AuthSpiceContext interface {
 // Is is used to pass information from the proxy to the Authenticator and
 // back again.
 type authSpice struct {
-	tenant          net.Conn
+	tenant          io.Reader
 	ticketCrypted   []byte
 	ticketUncrypted []byte
 
@@ -108,12 +111,15 @@ func (a *authSpice) readTicket() ([]byte, error) {
 	if a.ticketCrypted != nil {
 		return a.ticketCrypted, nil
 	}
+	if _, ok := a.tenant.(net.Conn); ok {
+		a.tenant.(net.Conn).SetReadDeadline(time.Now().Add(5 * time.Second))
+		defer a.tenant.(net.Conn).SetReadDeadline(time.Time{})
+	}
+
 	a.ticketCrypted = make([]byte, red.ClientTicketBytes)
-	a.tenant.SetReadDeadline(time.Now().Add(5 * time.Second))
 	if _, err := a.tenant.Read(a.ticketCrypted); err != nil {
 		return nil, errors.Wrap(err, "read deadline reached")
 	}
-	a.tenant.SetReadDeadline(time.Time{})
 	return a.ticketCrypted, nil
 }
 

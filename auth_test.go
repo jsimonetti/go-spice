@@ -5,10 +5,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
+	"io"
 	"log"
-	"net"
 	"testing"
-	"time"
 )
 
 func TestAuthSpiceSave(t *testing.T) {
@@ -39,7 +38,7 @@ func TestAuthSpiceToken(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	auth.tenant.Write(ciphertext)
+	auth.tenant.(io.Writer).Write(ciphertext)
 
 	token, err := auth.Token()
 	if err != nil {
@@ -77,18 +76,3 @@ func (a *authConn) Read(b []byte) (n int, err error) {
 func (a *authConn) Write(b []byte) (n int, err error) {
 	return a.buf.Write(b)
 }
-
-func (a *authConn) Close() error {
-	a.buf.Reset()
-	return nil
-}
-
-func (authConn) LocalAddr() net.Addr { return nil }
-
-func (authConn) RemoteAddr() net.Addr { return nil }
-
-func (authConn) SetDeadline(t time.Time) error { return nil }
-
-func (authConn) SetReadDeadline(t time.Time) error { return nil }
-
-func (authConn) SetWriteDeadline(t time.Time) error { return nil }

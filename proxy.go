@@ -82,13 +82,12 @@ func (p *Proxy) Serve(l net.Listener) error {
 func (p *Proxy) ServeConn(tenant net.Conn) error {
 	defer tenant.Close()
 
-	handShake := &tenantHandshake{
-		proxy: p,
-		log:   p.log.WithField("tenant", tenant.RemoteAddr().String()),
+	handShake, err := newTenantHandshake(p, p.log.WithField("tenant", tenant.RemoteAddr().String()))
+	if err != nil {
+		return err
 	}
 
 	var compute net.Conn
-	var err error
 
 	handShake.log.Debug("starting handshake")
 	for !handShake.Done() {
