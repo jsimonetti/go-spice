@@ -58,21 +58,9 @@ func newAuthSpice(t *testing.T) *authSpice {
 	}
 
 	a := &authSpice{
-		tenant:     &authConn{},
+		tenant:     bytes.NewBuffer(make([]byte, 0, 0)),
 		privateKey: key,
 	}
 
 	return a
-}
-
-type authConn struct {
-	buf bytes.Buffer
-}
-
-func (a *authConn) Read(b []byte) (n int, err error) {
-	return a.buf.Read(b)
-}
-
-func (a *authConn) Write(b []byte) (n int, err error) {
-	return a.buf.Write(b)
 }
