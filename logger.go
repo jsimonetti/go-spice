@@ -12,7 +12,7 @@ type Logger interface {
 	Error(...interface{})
 	// WithFields creates a new Logger with the fields embedded
 	WithFields(keyvals ...interface{}) Logger
-	// WithFields creates a new Logger with the error embedded
+	// WithError creates a new Logger with the error embedded
 	WithError(err error) Logger
 }
 
