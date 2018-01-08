@@ -1,4 +1,4 @@
-package main
+package spice_test
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func main() {
+func ExampleProxy() {
 	// create a new logger to be used for the proxy and the authenticator
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
