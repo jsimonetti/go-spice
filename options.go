@@ -17,7 +17,7 @@ func (p *Proxy) SetOption(option Option) error {
 
 // WithLogger can be used to provide a custom logger.
 // Defaults to a logrus implementation.
-func WithLogger(log *logrus.Entry) Option {
+func WithLogger(log Logger) Option {
 	return func(p *Proxy) error {
 		p.log = log
 		return nil
@@ -52,6 +52,6 @@ func defaultDialer() func(context.Context, string, string) (net.Conn, error) {
 	return dialer.DialContext
 }
 
-func defaultLogger() *logrus.Entry {
-	return logrus.New().WithField("app", "spiceProxy")
+func defaultLogger() Logger {
+	return Adapt(logrus.New().WithField("app", "spiceProxy"))
 }

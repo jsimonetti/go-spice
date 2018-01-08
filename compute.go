@@ -14,7 +14,6 @@ import (
 	"net"
 
 	"github.com/jsimonetti/go-spice/red"
-	"github.com/sirupsen/logrus"
 )
 
 type computeHandshake struct {
@@ -29,7 +28,7 @@ type computeHandshake struct {
 	sessionID   uint32
 
 	computePubKey red.PubKey
-	log           *logrus.Entry
+	log           Logger
 }
 
 func (c *computeHandshake) Done() bool {

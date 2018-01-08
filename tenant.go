@@ -1,16 +1,14 @@
 package spice
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"net"
-
-	"errors"
-
-	"crypto"
 
 	"github.com/jsimonetti/go-spice/red"
 	"github.com/sirupsen/logrus"
@@ -31,10 +29,10 @@ type tenantHandshake struct {
 	otp         string // one time password
 	destination string // compute computeAddress
 
-	log *logrus.Entry
+	log Logger
 }
 
-func newTenantHandshake(p *Proxy, log *logrus.Entry) (*tenantHandshake, error) {
+func newTenantHandshake(p *Proxy, log Logger) (*tenantHandshake, error) {
 
 	handShake := &tenantHandshake{
 		proxy: p,
@@ -88,7 +86,7 @@ func (c *tenantHandshake) clientLinkStage(tenant io.ReadWriter) (net.Conn, error
 		}
 	}
 
-	handShake.log = c.log.WithField("compute", c.destination)
+	handShake.log = c.log.WithFields("compute", c.destination)
 
 	for !handShake.Done() {
 		if err := handShake.clientLinkStage(c.destination); err != nil {
@@ -124,12 +122,12 @@ func (c *tenantHandshake) clientAuthMethod(tenant io.ReadWriter) error {
 
 	if auth, ok = c.proxy.authenticator[c.tenantAuthMethod]; !ok {
 		if err := sendServerTicket(red.ErrorPermissionDenied, tenant); err != nil {
-			c.log.WithError(err).Warn("send ticket")
+			c.log.WithError(err).Error("send ticket")
 		}
 		return fmt.Errorf("unavailable auth method %s", c.tenantAuthMethod)
 	}
 
-	c.log = c.log.WithField("authmethod", c.tenantAuthMethod)
+	c.log = c.log.WithFields("authmethod", c.tenantAuthMethod)
 	c.log.Debug("starting authentication")
 
 	var authCtx AuthContext
@@ -153,7 +151,7 @@ func (c *tenantHandshake) clientAuthMethod(tenant io.ReadWriter) error {
 
 	if !result {
 		if err := sendServerTicket(red.ErrorPermissionDenied, tenant); err != nil {
-			c.log.WithError(err).Warn("send ticket")
+			c.log.WithError(err).Error("send ticket")
 			return err
 		}
 		return fmt.Errorf("authentication failed")

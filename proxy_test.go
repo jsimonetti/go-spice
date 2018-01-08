@@ -19,7 +19,7 @@ func ExampleProxy() {
 	}
 
 	// create the proxy using the logger and authenticator
-	logger := log.WithField("component", "proxy")
+	logger := spice.Adapt(log.WithField("component", "proxy"))
 	proxy, err := spice.New(spice.WithLogger(logger),
 		spice.WithAuthenticator(authSpice))
 	if err != nil {

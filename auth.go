@@ -5,11 +5,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
-	"time"
-
 	"io"
-
 	"net"
+	"time"
 
 	"github.com/jsimonetti/go-spice/red"
 	"github.com/pkg/errors"

@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/jsimonetti/go-spice/red"
-	"github.com/sirupsen/logrus"
 )
 
 // Proxy is the server object for this spice proxy.
@@ -17,7 +16,7 @@ type Proxy struct {
 
 	// WithLogger can be used to provide a custom logger.
 	// Defaults to a logrus implementation.
-	log *logrus.Entry
+	log Logger
 
 	// WithDialer can be used to provide a custom dialer to reach compute nodes
 	// the network is always of type 'tcp' and the computeAddress is the compute node
@@ -62,7 +61,7 @@ func (p *Proxy) ListenAndServe(network, addr string) error {
 	if err != nil {
 		return err
 	}
-	p.log.Debugf("listening on %s", l.Addr().String())
+	p.log.Debug(fmt.Sprintf("listening on %s", l.Addr().String()))
 	return p.Serve(l)
 }
 
@@ -73,7 +72,7 @@ func (p *Proxy) Serve(l net.Listener) error {
 		if err != nil {
 			return err
 		}
-		p.log.WithField("tenant", tenant.RemoteAddr().String()).Debug("accepted connection")
+		p.log.WithFields("tenant", tenant.RemoteAddr().String()).Debug("accepted connection")
 		go p.ServeConn(tenant)
 	}
 }
@@ -82,7 +81,7 @@ func (p *Proxy) Serve(l net.Listener) error {
 func (p *Proxy) ServeConn(tenant net.Conn) error {
 	defer tenant.Close()
 
-	handShake, err := newTenantHandshake(p, p.log.WithField("tenant", tenant.RemoteAddr().String()))
+	handShake, err := newTenantHandshake(p, p.log.WithFields("tenant", tenant.RemoteAddr().String()))
 	if err != nil {
 		return err
 	}
