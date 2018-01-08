@@ -35,6 +35,13 @@ import (
 //
 type Authenticator interface {
 	// Next starts the authentication procedure for the tenant connection
+	// It should only ever return an error when there is a issue performing the
+	// authentication. A non-existant user/token or a bad password/token is not
+	// considered an error.
+	// Errors result in a connection being dropped instantly, whereas
+	// `accessGranted = false` results in the connection being dropped, after
+	// an 'access denied' message is returned. `accessGranted = false` is also not logged
+	// by the proxy, where an error is.
 	Next(AuthContext) (accessGranted bool, computeDestination string, err error)
 
 	// Method is used to retrieve the type of authentication this Authenticator supports
