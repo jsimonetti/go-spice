@@ -59,6 +59,7 @@ const (
 	ChannelSmartcard ChannelType = 8
 	ChannelUSBRedir  ChannelType = 9
 	ChannelPort      ChannelType = 10
+	ChannelWebdav    ChannelType = 11
 )
 
 //go:generate stringer -type=ErrorCode

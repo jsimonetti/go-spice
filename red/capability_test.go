@@ -60,3 +60,19 @@ func TestCapabilityFlip(t *testing.T) {
 		t.Errorf("Bit %d is set, and it shouldn't be.", 10)
 	}
 }
+
+func TestCommonCaps(t *testing.T) {
+	var v Capability
+	v.Set(CapabilityAuthSpice).Set(CapabilityAuthSelection).Set(CapabilityMiniHeader)
+	if v != 0x0b {
+		t.Errorf("wrong value")
+	}
+}
+
+func TestChannelCaps(t *testing.T) {
+	var v Capability
+	v.Set(CapabilityMainSeamlessMigrate).Set(CapabilityMainSemiSeamlessMigrate)
+	if v != 0x09 {
+		t.Errorf("wrong value %x", v)
+	}
+}

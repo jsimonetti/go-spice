@@ -203,13 +203,17 @@ func sendServerLinkPacket(wr io.Writer, key crypto.PublicKey) error {
 		return err
 	}
 
+	var channelCaps, commonCaps red.Capability
+	commonCaps.Set(red.CapabilityAuthSpice).Set(red.CapabilityAuthSelection).Set(red.CapabilityMiniHeader)
+	channelCaps.Set(red.CapabilityMainSeamlessMigrate).Set(red.CapabilityMainSemiSeamlessMigrate)
+
 	reply := red.ServerLinkMessage{
 		Error:               red.ErrorOk,
 		PubKey:              pubkey,
 		CommonCaps:          1,
 		ChannelCaps:         1,
-		CommonCapabilities:  []red.Capability{0x0b},
-		ChannelCapabilities: []red.Capability{0x09},
+		CommonCapabilities:  []red.Capability{commonCaps},
+		ChannelCapabilities: []red.Capability{channelCaps},
 	}
 
 	b, err := reply.MarshalBinary()

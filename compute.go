@@ -171,6 +171,10 @@ func (c *computeHandshake) clientAuthMethod(wr io.Writer) error {
 }
 
 func (c *computeHandshake) clientLinkMessage(rw io.ReadWriter) error {
+	var channelCaps, commonCaps red.Capability
+	commonCaps.Set(red.CapabilityAuthSpice).Set(red.CapabilityAuthSelection).Set(red.CapabilityMiniHeader)
+	channelCaps.Set(red.CapabilityMainSeamlessMigrate).Set(red.CapabilityMainSemiSeamlessMigrate)
+
 	myLink := &red.ClientLinkMessage{
 		ChannelID:           c.channelID,
 		ChannelType:         c.channelType,
@@ -178,8 +182,8 @@ func (c *computeHandshake) clientLinkMessage(rw io.ReadWriter) error {
 		CommonCaps:          1,
 		ChannelCaps:         1,
 		CapsOffset:          18,
-		CommonCapabilities:  []red.Capability{0x0d},
-		ChannelCapabilities: []red.Capability{0x0f},
+		CommonCapabilities:  []red.Capability{commonCaps},
+		ChannelCapabilities: []red.Capability{channelCaps},
 	}
 
 	mb, err := myLink.MarshalBinary()
