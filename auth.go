@@ -28,11 +28,11 @@ import (
 //  b) The Authenticator looks up the token '123e4567' in a shared store
 //     (kv store or database)
 //  c) The value of token 123e4567 is an encrypted compute node computeAddress.
-//     Attempt to decrypt the computeAddress using 'secretpw'. If this results in a valid
-//     compute node computeAddress, the user is granted access, and de compute destination
-//     is set to the decrypted node computeAddress. In the same transaction, a new
-//     token+secret should be generated, and the old one destroyed
-//
+//     Attempt to decrypt the computeAddress using 'secretpw'. If this results
+//     in a valid compute node computeAddress, the user is granted access, and
+//     de compute destination is set to the decrypted node computeAddress.
+//     In the same transaction, a new token+secret should be generated, and the
+//     old one destroyed
 type Authenticator interface {
 	// Next starts the authentication procedure for the tenant connection
 	// It should only ever return an error when there is a issue performing the
@@ -40,22 +40,24 @@ type Authenticator interface {
 	// considered an error.
 	// Errors result in a connection being dropped instantly, whereas
 	// `accessGranted = false` results in the connection being dropped, after
-	// an 'access denied' message is returned. `accessGranted = false` is also not logged
-	// by the proxy, where an error is.
+	// an 'access denied' message is returned. `accessGranted = false` is also
+	// not logged by the proxy, where an error is.
 	Next(AuthContext) (accessGranted bool, computeDestination string, err error)
 
-	// Method is used to retrieve the type of authentication this Authenticator supports
+	// Method is used to retrieve the type of authentication this
+	// Authenticator supports
 	Method() red.AuthMethod
 
-	// Init is called once during configuration and can be used to do any initialisation
-	// this Authenticator might need. If an error is returned, the Authenticator is not used.
+	// Init is called once during configuration and can be used to do any
+	// initialisation this Authenticator might need. If an error is
+	// returned, the Authenticator is not used.
 	Init() error
 }
 
 var _ Authenticator = &noopAuth{}
 
-// noopAuth is a default no-op Authenticator that returns a static compute entry and is always
-// successful.
+// noopAuth is a default no-op Authenticator that returns a static compute
+// entry and is always successful.
 type noopAuth struct{}
 
 // Next implements the Authenticator interface
