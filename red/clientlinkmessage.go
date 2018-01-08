@@ -29,8 +29,8 @@ type ClientLinkMessage struct {
 	CapsOffset uint32
 
 	// Capabilities hold the variable length capabilities
-	CommonCapabilities  []uint32
-	ChannelCapabilities []uint32
+	CommonCapabilities  []Capability
+	ChannelCapabilities []Capability
 }
 
 // MarshalBinary marshals a Packet into a byte slice.
@@ -47,12 +47,12 @@ func (p *ClientLinkMessage) MarshalBinary() ([]byte, error) {
 
 	offset := 18
 	for i := 0; i < len(p.CommonCapabilities); i += 4 {
-		binary.LittleEndian.PutUint32(b[i+offset:i+offset+4], p.CommonCapabilities[i])
+		binary.LittleEndian.PutUint32(b[i+offset:i+offset+4], uint32(p.CommonCapabilities[i]))
 	}
 
 	offset = 18 + 4*len(p.CommonCapabilities)
 	for i := 0; i < len(p.ChannelCapabilities); i += 4 {
-		binary.LittleEndian.PutUint32(b[i+offset:i+offset+4], p.ChannelCapabilities[i])
+		binary.LittleEndian.PutUint32(b[i+offset:i+offset+4], uint32(p.ChannelCapabilities[i]))
 	}
 
 	return b, nil
@@ -79,14 +79,14 @@ func (p *ClientLinkMessage) UnmarshalBinary(b []byte) error {
 		if len(b) < i+4 {
 			return errInvalidPacket
 		}
-		p.CommonCapabilities = append(p.CommonCapabilities, binary.LittleEndian.Uint32(b[i:i+4]))
+		p.CommonCapabilities = append(p.CommonCapabilities, Capability(binary.LittleEndian.Uint32(b[i:i+4])))
 	}
 
 	for i := 18 + len(p.CommonCapabilities)*4; i < 18+int(p.CommonCaps)*4+int(p.ChannelCaps)*4; i += 4 {
 		if len(b) < i+4 {
 			return errInvalidPacket
 		}
-		p.ChannelCapabilities = append(p.ChannelCapabilities, binary.LittleEndian.Uint32(b[i:i+4]))
+		p.ChannelCapabilities = append(p.ChannelCapabilities, Capability(binary.LittleEndian.Uint32(b[i:i+4])))
 	}
 
 	return p.validate()

@@ -17,36 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func readMiniHeaderPacket(conn io.Reader) (uint16, []byte, error) {
-	headerBytes := make([]byte, 6)
-
-	if _, err := conn.Read(headerBytes); err != nil {
-		return 0, nil, err
-	}
-
-	header := &red.MiniDataHeader{}
-	if err := header.UnmarshalBinary(headerBytes); err != nil {
-		return 0, nil, err
-	}
-
-	var messageBytes []byte
-	var n int
-	var err error
-	pending := int(header.Size)
-
-	for pending > 0 {
-		b := make([]byte, header.Size)
-		if n, err = conn.Read(b); err != nil {
-			return 0, nil, err
-		}
-		pending = pending - n
-		messageBytes = append(messageBytes, b[:n]...)
-	}
-
-	totalBytes := append(headerBytes, messageBytes[:int(header.Size)]...)
-	return header.MessageType, totalBytes, nil
-}
-
 type computeHandshake struct {
 	proxy *Proxy
 
@@ -208,8 +178,8 @@ func (c *computeHandshake) clientLinkMessage(rw io.ReadWriter) error {
 		CommonCaps:          1,
 		ChannelCaps:         1,
 		CapsOffset:          18,
-		CommonCapabilities:  []uint32{0x0d},
-		ChannelCapabilities: []uint32{0x0f},
+		CommonCapabilities:  []red.Capability{0x0d},
+		ChannelCapabilities: []red.Capability{0x0f},
 	}
 
 	mb, err := myLink.MarshalBinary()
@@ -250,4 +220,34 @@ func (c *computeHandshake) clientLinkMessage(rw io.ReadWriter) error {
 	c.computePubKey = srvLm.PubKey
 
 	return nil
+}
+
+func readMiniHeaderPacket(conn io.Reader) (uint16, []byte, error) {
+	headerBytes := make([]byte, 6)
+
+	if _, err := conn.Read(headerBytes); err != nil {
+		return 0, nil, err
+	}
+
+	header := &red.MiniDataHeader{}
+	if err := header.UnmarshalBinary(headerBytes); err != nil {
+		return 0, nil, err
+	}
+
+	var messageBytes []byte
+	var n int
+	var err error
+	pending := int(header.Size)
+
+	for pending > 0 {
+		b := make([]byte, header.Size)
+		if n, err = conn.Read(b); err != nil {
+			return 0, nil, err
+		}
+		pending = pending - n
+		messageBytes = append(messageBytes, b[:n]...)
+	}
+
+	totalBytes := append(headerBytes, messageBytes[:int(header.Size)]...)
+	return header.MessageType, totalBytes, nil
 }

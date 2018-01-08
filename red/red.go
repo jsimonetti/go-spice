@@ -86,16 +86,5 @@ const TicketPubkeyBytes = 162
 // ClientTicketBytes is the length of an encrypted Spice token
 const ClientTicketBytes = 128
 
-//go:generate stringer -type=Capability
-
-// Capability is the authentication capability
-type Capability uint8
-
-// Authentication capabilities
-const (
-	CapabilityAuthSpice Capability = 1
-	CapabilityAuthSASL  Capability = 2
-)
-
 // PubKey is a red ticket public key
 type PubKey [TicketPubkeyBytes]byte

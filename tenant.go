@@ -208,8 +208,8 @@ func sendServerLinkPacket(wr io.Writer, key crypto.PublicKey) error {
 		PubKey:              pubkey,
 		CommonCaps:          1,
 		ChannelCaps:         1,
-		CommonCapabilities:  []uint32{0x0b},
-		ChannelCapabilities: []uint32{0x09},
+		CommonCapabilities:  []red.Capability{0x0b},
+		ChannelCapabilities: []red.Capability{0x09},
 	}
 
 	b, err := reply.MarshalBinary()
