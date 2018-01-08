@@ -15,4 +15,4 @@ TODO:
 - implement SASL authentication (Not planned, but nice to have)
 
 
-See [example](example/proxy.go) for an example including an Authenticator
+See [example](https://godoc.org/github.com/jsimonetti/go-spice#Proxy) for an example including an Authenticator

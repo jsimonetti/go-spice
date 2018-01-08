@@ -19,7 +19,9 @@ func main() {
 	}
 
 	// create the proxy using the logger and authenticator
-	proxy, err := spice.New(spice.WithLogger(log.WithField("component", "proxy")), spice.WithAuthenticator(authSpice))
+	logger := log.WithField("component", "proxy")
+	proxy, err := spice.New(spice.WithLogger(logger),
+		spice.WithAuthenticator(authSpice))
 	if err != nil {
 		log.Fatalf("error: %s", err)
 	}
@@ -50,8 +52,8 @@ func (a *AuthSpice) Next(c spice.AuthContext) (bool, string, error) {
 		return false, "", err
 	}
 
-	// is the previously saved token is set and matches the token sent by the tenant
-	// we return the previously saved compute address
+	// is the previously saved token is set and matches the token
+	// sent by the tenant we return the previously saved compute address
 	if ctx.LoadToken() != "" && ctx.LoadToken() == token {
 		a.log.Debug("LoadToken found and matches password")
 		return true, ctx.LoadAddress(), nil
@@ -79,20 +81,21 @@ func (a *AuthSpice) Method() red.AuthMethod {
 // resolveComputeAddress is a custom function that checks the token and returns
 // a compute node address
 func (a *AuthSpice) resolveComputeAddress(token string) (string, bool) {
-	// this is just an example, lookup your token somewhere and resolve it to a compute node.
-	// When creating your own authentication you should probably use one-time tokens
-	// for the tenant authentication. Using a method based on the below sequence of events:
+	// this is just an example, lookup your token somewhere and resolve it
+	// to a compute node. When creating your own authentication you should
+	// probably use one-time tokens for the tenant authentication.
+	// Using a method based on the below sequence of events:
 	//
 	//  a) Tenant authenticates using token '123e4567:secretpw'
 	//  b) The Authenticator looks up the token '123e4567' in a shared store
 	//     (kv store or database)
-	//  c) The value of token 123e4567 is an encrypted compute node computeAddress.
-	//     Attempt to decrypt the computeAddress using 'secretpw'. If this results in a valid
-	//     compute node computeAddress, the user is granted access, and de compute destination
-	//     is set to the decrypted node computeAddress. In the same transaction, a new
-	//     token+secret should be generated, and the old one destroyed
-
-	// lookup in static map
+	//  c) The value of token 123e4567 is an encrypted compute
+	//     node computeAddress.
+	//     Attempt to decrypt the computeAddress using 'secretpw'.
+	//     If this results in a valid compute node computeAddress,
+	//     the user is granted access, and de compute destination
+	//     is set to the decrypted node computeAddress. In the same transaction,
+	//     a new token+secret should be generated, and the old one destroyed
 	if compute, ok := a.computeMap[token]; ok {
 		a.log.Warn("bogus token check and compute node")
 		return compute, true
