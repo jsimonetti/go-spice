@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jsimonetti/go-spice/red"
 )
 
@@ -122,7 +121,6 @@ func Test_sendServerTicket(t *testing.T) {
 				return
 			}
 			if gotWriter := writer.Bytes(); !bytes.Equal(gotWriter, tt.wantWriter) {
-				spew.Dump(tt.wantWriter)
 				t.Errorf("sendServerTicket() = %+#v, want %+#v", gotWriter, tt.wantWriter)
 			}
 		})
