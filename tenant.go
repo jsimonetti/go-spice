@@ -11,7 +11,6 @@ import (
 	"net"
 
 	"github.com/jsimonetti/go-spice/red"
-	"github.com/sirupsen/logrus"
 )
 
 type tenantHandshake struct {
@@ -180,7 +179,7 @@ func (c *tenantHandshake) clientLinkMessage(tenant io.ReadWriter) error {
 	c.channelID = linkMessage.ChannelID
 	c.sessionID = linkMessage.SessionID
 
-	c.log = c.log.WithFields(logrus.Fields{"channel": c.channelID, "type": c.channelType, "session": c.sessionID})
+	c.log = c.log.WithFields("channel", c.channelID, "type", c.channelType, "session", c.sessionID)
 
 	return sendServerLinkPacket(tenant, c.privateKey.Public())
 }
