@@ -55,3 +55,13 @@ func defaultDialer() func(context.Context, string, string) (net.Conn, error) {
 func defaultLogger() Logger {
 	return Adapt(logrus.New().WithField("app", "spiceProxy"))
 }
+
+// WithConnectionCloseHandler is called when the main channel of a SPICE session is closed.
+// The "destination" parameter contains the compute node address returned by "resolveComputeAddress".
+// WithConnectionCloseHandler can be used to clean up after a SPICE connection was closed
+func WithConnectionCloseHandler(closeCallback func(destination string)) Option {
+	return func(p *Proxy) error {
+		p.closeCallback = closeCallback
+		return nil
+	}
+}

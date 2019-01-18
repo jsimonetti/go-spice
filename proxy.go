@@ -25,6 +25,9 @@ type Proxy struct {
 
 	// sessionTable holds all the sessions for this proxy
 	sessionTable *sessionTable
+
+	// optional function called when main channel is closed
+	closeCallback func(destination string)
 }
 
 // New returns a new *Proxy with the options applied
@@ -101,6 +104,11 @@ func (p *Proxy) ServeConn(tenant net.Conn) error {
 	flow := newFlow(tenant, compute)
 	if err := flow.Pipe(); err != nil {
 		handShake.log.WithError(err).Error("close error")
+	}
+
+	// if connection was closed and it's the main channel, call the closeCallback
+	if handShake.channelType == red.ChannelMain && p.closeCallback != nil {
+		p.closeCallback(handShake.destination)
 	}
 
 	handShake.log.Info("connection closed")
