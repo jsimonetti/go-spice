@@ -1,0 +1,39 @@
+kind: pipeline
+name: default
+
+workspace:
+  base: /go
+  path: src/github.com/jsimonetti/go-spice
+
+steps:
+  - name: fmt
+    image: golang
+    commands:
+      - export GOFMT=$(gofmt -l .)
+      - echo -n "$GOFMT"
+      - $(exit $(echo -n "$GOFMT" | wc -c))
+  - name: lint
+    image: golang
+    allow_failure: true
+    commands:
+      - go get golang.org/x/lint/golint
+      - export GOLINT=$(golint ./... | grep --invert-match -P "(_string.go:)")
+      - echo "$GOLINT"
+      - $(exit $(echo -n "$GOLINT" | wc -l))
+  - name: dep
+    image: golang
+    commands:
+      - go get github.com/golang/dep/...
+      - dep ensure
+  - name: vet
+    image: golang
+    commands:
+      - go vet ./...
+  - name: test
+    image: golang
+    commands:
+      - go test -v ./...
+    when:
+      event:
+        - pull_request
+        - push
