@@ -70,11 +70,6 @@ steps:
     image: golang
     commands:
       - go test -v ./...
-  - name: integration
-    image: golang
-    privileged: true
-    commands:
-      - go test -v -tags=integration ./...
 
 when:
   event:
