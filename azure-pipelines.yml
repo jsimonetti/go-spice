@@ -10,34 +10,50 @@ pool:
   vmImage: 'Ubuntu-16.04'
 
 variables:
+  GOPATH: '$(Agent.BuildDirectory)/gopath' # Go workspace path
+  GOROOT: '/home/vsts/.go' # Go installation path
   GOBIN:  '$(GOPATH)/bin' # Go binaries path
-  GOROOT: '/usr/local/go1.11' # Go installation path
-  GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
-  modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
+  modulePath: '$(Agent.BuildDirectory)/$(build.repository.name)' # Path to the module's code
 
 steps:
+- script: |
+    wget "https://storage.googleapis.com/golang/getgo/installer_linux" --output-document "$(Agent.BuildDirectory)/go-installer_linux"
+    chmod +x "$(Agent.BuildDirectory)/go-installer_linux"
+    export SHELL="/bin/bash"
+    $(Agent.BuildDirectory)/go-installer_linux -v
+  displayName: 'Install Go'
+
 - script: |
     mkdir -p '$(GOBIN)'
     mkdir -p '$(GOPATH)/pkg'
     mkdir -p '$(modulePath)'
+    mkdir -p '$(GOROOT)'
     shopt -s extglob
     shopt -s dotglob
     mv !(gopath) '$(modulePath)'
     echo '##vso[task.prependpath]$(GOBIN)'
     echo '##vso[task.prependpath]$(GOROOT)/bin'
+    go version
   displayName: 'Set up the Go workspace'
 
 - script: |
-    go version
-    go get -v -t -d ./...
-    if [ -f Gopkg.toml ]; then
+    if [ -f go.mod ]; then
+        echo 'downloading go modules'
+        go mod download -json
+        go mod verify
+    elif [ -f Gopkg.toml ]; then
+        echo 'downloading dep and ensuring'
         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
         dep ensure
+    else
+        echo 'go getting'
+        go get -v -t -d ./...
     fi
   workingDirectory: '$(modulePath)'
   displayName: 'Get dependencies'
 
 - script: |
+    export GO111MODULES=on
     go vet ./...
     go test -v ./...
   workingDirectory: '$(modulePath)'
