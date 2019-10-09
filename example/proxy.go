@@ -1,14 +1,15 @@
-package spice
+package main
 
 import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/jsimonetti/go-spice"
 	"github.com/jsimonetti/go-spice/red"
 )
 
-func Example_proxy() {
+func main() {
 	// create a new logger to be used for the proxy and the authenticator
 	log := logrus.New()
 	log.SetLevel(logrus.DebugLevel)
@@ -19,9 +20,9 @@ func Example_proxy() {
 	}
 
 	// create the proxy using the logger and authenticator
-	logger := Adapt(log.WithField("component", "proxy"))
-	proxy, err := New(WithLogger(logger),
-		WithAuthenticator(authSpice))
+	logger := spice.Adapt(log.WithField("component", "proxy"))
+	proxy, err := spice.New(spice.WithLogger(logger),
+		spice.WithAuthenticator(authSpice))
 	if err != nil {
 		log.Fatalf("error: %s", err)
 	}
@@ -38,11 +39,11 @@ type AuthSpice struct {
 }
 
 // Next will check the supplied token and return authorisation information
-func (a *AuthSpice) Next(c AuthContext) (bool, string, error) {
+func (a *AuthSpice) Next(c spice.AuthContext) (bool, string, error) {
 	// convert the AuthContext into an AuthSpiceContext, since we do that
-	var ctx AuthSpiceContext
+	var ctx spice.AuthSpiceContext
 	var ok bool
-	if ctx, ok = c.(AuthSpiceContext); !ok {
+	if ctx, ok = c.(spice.AuthSpiceContext); !ok {
 		return false, "", fmt.Errorf("invalid auth method")
 	}
 
@@ -107,7 +108,7 @@ func (a *AuthSpice) resolveComputeAddress(token string) (string, bool) {
 func (a *AuthSpice) Init() error {
 	// fill in some compute nodes
 	a.computeMap = map[string]string{
-		"test1": "127.0.0.1:5901",
+		"test":  "127.0.0.1:5901",
 		"test2": "127.0.0.1:5902",
 	}
 	a.log.Debug("AuthSpice initialised")

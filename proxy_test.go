@@ -3,9 +3,10 @@ package spice_test
 import (
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/jsimonetti/go-spice"
 	"github.com/jsimonetti/go-spice/red"
-	"github.com/sirupsen/logrus"
 )
 
 func ExampleProxy() {
@@ -27,7 +28,7 @@ func ExampleProxy() {
 	}
 
 	// start listening for tenant connections
-	log.Fatal(proxy.ListenAndServe("tcp", "127.0.0.1:5901"))
+	log.Fatal(proxy.ListenAndServe("tcp", "127.0.0.1:5900"))
 }
 
 // AuthSpice is an example implementation of a spice Authenticator
@@ -107,7 +108,7 @@ func (a *AuthSpice) resolveComputeAddress(token string) (string, bool) {
 func (a *AuthSpice) Init() error {
 	// fill in some compute nodes
 	a.computeMap = map[string]string{
-		"test":  "127.0.0.1:5900",
+		"test":  "127.0.0.1:5901",
 		"test2": "127.0.0.1:5902",
 	}
 	a.log.Debug("AuthSpice initialised")
