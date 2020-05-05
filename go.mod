@@ -7,7 +7,7 @@ require (
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.0.4
+	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20180111101123-5f55bce93ad2 // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
